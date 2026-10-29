@@ -50,6 +50,8 @@ export async function launch({ width = 1280, height = 800, port = 9333 } = {}) {
     });
   await send("Runtime.enable");
   await send("Page.enable");
+  // headless windows report no focus; tests run as a focused tab unless they say otherwise
+  await send("Emulation.setFocusEmulationEnabled", { enabled: true });
 
   const api = {
     logs, send,

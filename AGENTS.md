@@ -31,7 +31,7 @@ js/questions.js    问答：题库、答案卡从轨道浮现、点击 / 数字�
 js/ui.js            入口、HUD 时钟、空闲淡出、提示、按钮、低语文字、localStorage 停留记录
 js/music.js         ♪ 节奏主题面板（主题列表、速度、密度）与拖放
 js/input.js         指针 / 键盘 → 声音与特效
-js/main.js          resize、帧循环、进入世界
+js/main.js          resize、帧循环（聚焦全速 / 失焦 3 fps / 隐藏只走时间不画）、进入世界
 ```
 
 ## 约定
@@ -42,6 +42,7 @@ js/main.js          resize、帧循环、进入世界
 - 用户偏好：节奏慢、声部稀、颜色偏暖、字不要太小（v0.2.0 按这个方向调过一次）。
 - 所有玩家能发出的音都在 D 大调五声音阶里（`S.music`），所以随便按都不会和背景冲突。
 - 画面与音频同步：音符和拍线用 `S.audio.heard()`（扣除输出延迟后的音频时钟）定位，不用 performance.now()。
+- 帧率：页面可见且聚焦时 requestAnimationFrame 全速；失焦或隐藏时改用 3 fps 的定时器，隐藏时只更新世界时间不绘制（这样日出日落的动机照常触发）。动画要用 dt 或绝对时间，dt 上限 0.5 s。
 - `S.cfg.lookahead` 必须大于 `S.cfg.travel`，否则音符会在轨道中途凭空出现。
 - 节拍只有一个来源：`S.conductor.grid()`（参考音乐播放时返回歌曲的网格）；调性只有一个来源：`S.music.root`。不要另起平行的节拍或调性。
 - 参考曲子只是节奏和调性的来源，**永远不播放原曲**，也不做成打音游。节奏主题播放时，它代替生成调度器驱动同一套乐器（`S.conductor.note / chordOn / melody`）；切换时等已调度的音符响完再开始，避免两个调重叠。
@@ -50,6 +51,7 @@ js/main.js          resize、帧循环、进入世界
 - 语法检查：`for f in js/*.js js/audio/*.js js/scene/*.js; do node --check "$f"; done`
 - 冒烟测试（无头 Edge + CDP，会点击/拖动/按键，打印音量峰值/RMS、状态和页面报错，截图到 `test-screenshots/`）：
   `node test-scripts/smoke.mjs`
+- 帧率：`node test-scripts/fps-check.mjs`（聚焦 / 失焦 / 隐藏三种状态的绘制帧率和 CPU 时间）。cdp.mjs 默认开启焦点模拟，让无头窗口按聚焦处理。
 - 节奏主题：`node test-scripts/smoke-ref.mjs [song.flac]`（会检查原曲没有被播放）；只看分析结果：`node test-scripts/analyze-check.mjs`；独立的 numpy 测速对照：`python test-scripts/tempo_check.py song.flac`。
 - 本机有 ffmpeg / ffprobe 和 numpy。浏览器能直接解码 24-bit FLAC，不需要转 wav。音频文件已在 `.gitignore`。
 - 各时段画面：`node test-scripts/hours.mjs 5.5 12.5 17.6 23`

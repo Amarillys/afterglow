@@ -3,7 +3,8 @@
   const S = window.Sekai, A = S.audio;
   const canvas = document.getElementById("world");
   const ctx = canvas.getContext("2d", { alpha: false });
-  let last = performance.now();
+  const IDLE_FPS = 3;
+  let last = performance.now(), raf = 0, timer = 0, active = !document.hidden && document.hasFocus();
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, S.cfg.maxDpr);
@@ -13,10 +14,31 @@
     S.layout.resize(w, h, dpr);
   }
 
+  // full rate while the page is visible and focused, about 3 fps otherwise;
+  // while hidden nothing is drawn, but world time keeps moving so dawn and dusk still reach the music
   function frame(now) {
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const dt = Math.min(0.5, (now - last) / 1000);
     last = now;
     S.time.update(now);
+    if (!document.hidden) draw(now, dt);
+    schedule();
+  }
+
+  function schedule() {
+    if (active) raf = requestAnimationFrame(frame);
+    else timer = setTimeout(() => frame(performance.now()), 1000 / IDLE_FPS);
+  }
+
+  function setActive() {
+    const on = !document.hidden && document.hasFocus();
+    if (on === active) return;
+    active = on;
+    cancelAnimationFrame(raf);
+    clearTimeout(timer);
+    schedule();
+  }
+
+  function draw(now, dt) {
     const heard = A.ready ? A.heard() : 0;
     ctx.setTransform(S.view.dpr, 0, 0, S.view.dpr, 0, 0);
     S.sky.draw(ctx, now);
@@ -31,7 +53,6 @@
       S.ui.update();
       S.mood.update();
     }
-    requestAnimationFrame(frame);
   }
 
   function enter() {
@@ -49,7 +70,9 @@
   }
 
   addEventListener("resize", resize);
+  ["focus", "blur", "pointerdown", "keydown"].forEach((e) => addEventListener(e, setActive));
+  document.addEventListener("visibilitychange", setActive);
   resize();
   S.ui.initGate(enter);
-  requestAnimationFrame(frame);
+  schedule();
 })();
