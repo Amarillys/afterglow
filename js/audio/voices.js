@@ -32,15 +32,62 @@
   const BELL = [[1, 1, 3.2], [2, 0.32, 1.7], [3.01, 0.12, 0.9], [4.2, 0.07, 0.5], [5.43, 0.04, 0.3]];
   const CHIME = [[1, 1, 2.6], [2.76, 0.42, 1.5], [5.4, 0.2, 0.8], [8.93, 0.08, 0.45]];
 
+  // The bell is the busiest voice, so each (pitch, length) is rendered once into a buffer: the same partials,
+  // envelopes, stop times and lowpass as an oscillator-per-partial bell, at about a quarter of its audio-thread cost.
+  const bells = new Map(), BELL_CACHE = 32;
+  function bellBuffer(freq, len) {
+    const key = Math.round(freq * 100) + ":" + len;
+    let buf = bells.get(key);
+    if (buf) {
+      bells.delete(key);
+      bells.set(key, buf);
+      return buf;
+    }
+    const rate = A.ctx.sampleRate;
+    const parts = BELL.map(([r, a, d]) => [freq * r, a, d * len, 0.006]).concat([[freq * 1.003, 0.25, 2.2 * len, 0.03]]);
+    const n = Math.ceil(rate * (Math.max(...parts.map((p) => p[2] + p[3])) + 0.12));
+    const x = new Float64Array(n);
+    for (const [f, a, dec, att] of parts) {
+      if (f > 11000) continue;
+      const w = (2 * Math.PI * f) / rate, c2 = 2 * Math.cos(w), k = Math.exp(-4.6 / (dec * rate));
+      // linear attack, then setTargetAtTime's exponential fall; sine and decay by recurrence
+      const na = att * rate, ia = Math.ceil(na), end = Math.min(n, Math.ceil((att + dec + 0.1) * rate));
+      let s0 = -Math.sin(w), s1 = 0, e = Math.exp((-4.6 * (ia - na)) / (dec * rate));
+      for (let i = 0; i < end; i++) {
+        if (i < ia) x[i] += a * (i / na) * s1;
+        else (x[i] += a * e * s1), (e *= k);
+        const s2 = c2 * s1 - s0;
+        s0 = s1;
+        s1 = s2;
+      }
+    }
+    // the BiquadFilterNode lowpass (Q = 1 dB), as the Web Audio spec defines it
+    const w0 = (2 * Math.PI * Math.min(5600, freq * 6)) / rate, cw = Math.cos(w0), al = Math.sin(w0) / (2 * Math.pow(10, 1 / 20));
+    const a0 = 1 + al, b0 = (1 - cw) / 2 / a0, b1 = (1 - cw) / a0, a1 = (-2 * cw) / a0, a2 = (1 - al) / a0;
+    buf = A.ctx.createBuffer(1, n, rate);
+    const out = buf.getChannelData(0);
+    let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+    for (let i = 0; i < n; i++) {
+      const y = b0 * x[i] + b1 * x1 + b0 * x2 - a1 * y1 - a2 * y2;
+      x2 = x1;
+      x1 = x[i];
+      y2 = y1;
+      y1 = out[i] = y;
+    }
+    bells.set(key, buf);
+    if (bells.size > BELL_CACHE) bells.delete(bells.keys().next().value);
+    return buf;
+  }
+
   // sky taps, background melody: soft glass bell
   V.bell = function (t, freq, o = {}) {
     if (!A.ready) return;
-    const amp = 0.17 * (o.vel ?? 1) * trim(freq);
     const out = A.strip({ pan: o.pan, dry: o.dry ?? 0.9, wet: o.wet ?? 0.45, echo: o.echo ?? 0.18 });
-    const lp = lowpass(out.input, Math.min(5600, freq * 6));
-    const len = o.len ?? 1;
-    BELL.forEach(([r, a, d]) => partial(t, lp, freq * r, amp * a, d * len, 0.006));
-    partial(t, lp, freq * 1.003, amp * 0.25, 2.2 * len, 0.03);
+    out.input.gain.value = 0.17 * (o.vel ?? 1) * trim(freq);
+    const src = A.ctx.createBufferSource();
+    src.buffer = bellBuffer(freq, o.len ?? 1);
+    src.connect(out.input);
+    src.start(t);
   };
 
   // floor taps: a drop on still water (near = dry and bright, far = soft and distant)
@@ -60,7 +107,7 @@
     g.gain.setTargetAtTime(0, t + 0.004, 0.32);
     osc.connect(g).connect(lp);
     osc.start(t);
-    osc.stop(t + 2.2);
+    osc.stop(t + 1.6);
     partial(t, lp, freq * 2, amp * 0.22, 0.5, 0.002);
     partial(t, lp, freq * 4, amp * 0.06, 0.12, 0.001);
   };

@@ -17,7 +17,7 @@ css/style.css       HUD / 入口 / 浮现文字样式
 js/core.js          命名空间 window.Sekai、配置、数学/颜色/种子随机、事件、音阶、屏幕布局与透视
 js/time.js          世界时间、日月位置、天空调色板关键帧
 js/audio/engine.js  AudioContext、混响、乒乓延迟、压缩、每个声部的 strip()、heard() 听感时钟
-js/audio/voices.js  一次性音色：bell（天空）、drop（水面）、chime（碎片）、pluck（拖动 Karplus-Strong）
+js/audio/voices.js  一次性音色：bell（天空，预渲染缓冲区）、drop（水面）、chime（碎片）、pluck（拖动 Karplus-Strong）
 js/audio/layers.js  持续音色：arc（拖动长音）、pad、tide（起落的潮声）、pulse（心跳）、tick（钟）
 js/audio/conductor.js  和弦进行、提前调度（lookahead）、旋律随机游走、黎明/黄昏动机、扫弦、全局节拍 grid()
 js/audio/analyze.js   参考音乐分析：节拍网格、onset → 四条轨道的音符、调性、响度（纯计算，无状态）
@@ -51,7 +51,9 @@ js/main.js          resize、帧循环（聚焦全速 / 失焦 3 fps / 隐藏只
 - 语法检查：`for f in js/*.js js/audio/*.js js/scene/*.js; do node --check "$f"; done`
 - 冒烟测试（无头 Edge + CDP，会点击/拖动/按键，打印音量峰值/RMS、状态和页面报错，截图到 `test-screenshots/`）：
   `node test-scripts/smoke.mjs`
-- 性能 / 泄露：`node test-scripts/leak-check.mjs [秒]`（长时间压力下的节点数、渲染负载、堆）、`node test-scripts/cost-check.mjs`（固定图各部分的渲染成本）。排查记录见 `docs/perf-investigation.md`。
+- 性能 / 泄露：`node test-scripts/leak-check.mjs [秒]`（长时间压力下的节点数、渲染负载、堆、各声部调用频率）、`node test-scripts/cost-check.mjs [轮数] [过滤]`（固定图各部分和各声部爆发的渲染成本）、`node test-scripts/ab-check.mjs`（上一次提交 vs 工作区，交替对比同样负载下的渲染负载）。改铃的音色后跑 `node test-scripts/bell-compare.mjs`（缓冲区铃 vs 振荡器铃的逐采样误差）。排查记录见 `docs/perf-investigation.md`。渲染负载测量噪声约 ±3 个百分点，对比要多轮、交替顺序。
+- 铃（`V.bell`）按（音高, 长度）预渲染成缓冲区（`bellBuffer`，LRU 32 个）。它的低通是在 `bellBuffer` 里按 Web Audio 规范的公式用 JS 算的，不是 BiquadFilterNode；改铃的截止频率或 Q 要改那里。
+- 卷积混响占固定图渲染成本的大头（约 12 个百分点），成本随冲激长度增长；冲激在 -60 dB 处结束，不要再缩短（会改变空间感）。
 - 帧率：`node test-scripts/fps-check.mjs`（聚焦 / 失焦 / 隐藏三种状态的绘制帧率和 CPU 时间）。cdp.mjs 默认开启焦点模拟，让无头窗口按聚焦处理。
 - 节奏主题：`node test-scripts/smoke-ref.mjs [song.flac]`（会检查原曲没有被播放）；只看分析结果：`node test-scripts/analyze-check.mjs`；独立的 numpy 测速对照：`python test-scripts/tempo_check.py song.flac`。
 - 本机有 ffmpeg / ffprobe 和 numpy。浏览器能直接解码 24-bit FLAC，不需要转 wav。音频文件已在 `.gitignore`。
@@ -60,5 +62,5 @@ js/main.js          resize、帧循环（聚焦全速 / 失焦 3 fps / 隐藏只
 - 截图按 `VERSION` 分目录存放（`test-screenshots/0.2.0/`），方便前后对比。
 - 问答截图：`node test-scripts/hours.mjs --ask 1.5 9`（强制出题）。冒烟测试也会各用键盘和点击答一题。
 - localStorage：`chiyo-sekai`（来访记录）、`chiyo-sekai-mood`（属性）、`chiyo-sekai-asked`（已问过的题）、`chiyo-sekai-themes`（最近 6 首曲子的节奏主题、设置和当前选择）。
-- `test-screenshots/` 和 `test-scripts/.profile/`（无头浏览器临时配置）已在 `.gitignore` 中。
+- `test-screenshots/`、`test-results/`（测试原始输出）、`test-scripts/.profile/`（无头浏览器临时配置）、`test-scripts/.ab/`（ab-check 解出的旧版本）已在 `.gitignore` 中。
 - 参考电平（v0.3.0）：环境声 RMS ≈ 0.04–0.08，交互时峰值 ≈ 0.45，无削波。

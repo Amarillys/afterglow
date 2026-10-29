@@ -4,3 +4,5 @@ test-scripts/.profile/
 *.flac
 *.wav
 *.mp3
+test-scripts/.ab/
+test-results/

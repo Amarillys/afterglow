@@ -3,13 +3,15 @@
   const S = window.Sekai;
   const A = (S.audio = { ctx: null, ready: false, muted: false, level: 0.8 });
 
-  function impulse(ctx, seconds, decay) {
-    const rate = ctx.sampleRate, len = Math.floor(rate * seconds);
+  // noise under (1 - t/span)^decay; the decay runs in absolute time, so stopping where it is 60 dB down
+  // drops only an inaudible tail and keeps the room's RT60 (the convolver's cost grows with the length)
+  function impulse(ctx, span, decay) {
+    const rate = ctx.sampleRate, seconds = span * (1 - Math.pow(0.001, 1 / decay)), len = Math.floor(rate * seconds);
     const buf = ctx.createBuffer(2, len, rate);
     for (let c = 0; c < 2; c++) {
       const d = buf.getChannelData(c);
       for (let i = 0; i < len; i++) {
-        const t = i / len;
+        const t = i / (rate * span);
         const pre = Math.min(1, i / (rate * 0.02));
         d[i] = (Math.random() * 2 - 1) * pre * Math.pow(1 - t, decay);
       }
@@ -99,7 +101,7 @@
     dL.connect(dR);
     dR.connect(merge, 0, 1);
     dR.connect(tone).connect(fb).connect(dL);
-    const eOut = ctx.createGain();
+    const eOut = (A.echoOut = ctx.createGain());
     eOut.gain.value = 0.55;
     merge.connect(eOut).connect(A.bus);
     eOut.connect(A.verb);

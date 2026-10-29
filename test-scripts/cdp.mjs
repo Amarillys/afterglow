@@ -57,7 +57,7 @@ export async function launch({ width = 1280, height = 800, port = 9333 } = {}) {
   await send("Emulation.setFocusEmulationEnabled", { enabled: true });
 
   const api = {
-    logs, send,
+    logs, send, pid: proc.pid,
     on(method, fn) {
       (listeners[method] ||= []).push(fn);
     },

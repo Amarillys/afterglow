@@ -37,11 +37,16 @@ async function render() {
   return { cap: +((cap / Math.max(1, n)) * 100).toFixed(1), jitterUs: +((varc / Math.max(1, n)) * 1e6).toFixed(1) };
 }
 const t0 = Date.now(), rows = [];
+let lastSample = t0;
 async function sample(label) {
   const m = Object.fromEntries((await b.send("Performance.getMetrics")).result.metrics.map((x) => [x.name, x.value]));
   const r = await render();
+  const now = Date.now(), dt = (now - lastSample) / 1000;
+  const calls = JSON.parse(await b.eval("(() => { const c = JSON.stringify(__calls); __calls = {}; return c; })()"));
+  lastSample = now;
+  const perSec = Object.entries(calls).filter(([k]) => k !== "wave").map(([k, n]) => k + ":" + (n / dt).toFixed(1)).join(" ");
   const row = { t: Math.round((Date.now() - t0) / 1000), label, liveNodes: live.size, created, params, renderPct: r.cap, jitterUs: r.jitterUs,
-    heapMB: +(m.JSHeapUsedSize / 1048576).toFixed(1), dom: m.Nodes, listeners: m.JSEventListeners };
+    heapMB: +(m.JSHeapUsedSize / 1048576).toFixed(1), dom: m.Nodes, listeners: m.JSEventListeners, voicesPerSec: perSec };
   rows.push(row);
   console.log(JSON.stringify(row));
 }
@@ -52,8 +57,15 @@ const gc = async () => {
 const top = () => Object.entries(byType).filter(([, n]) => n > 0).sort((a, z) => z[1] - a[1]).slice(0, 6).map(([k, n]) => k + ":" + n).join(" ");
 
 await b.go(pageUrl("?day=120"));
+// count every voice call, so each sample can say what was playing (calls per second since the last sample)
+await b.eval(`window.__calls = {}; for (const k of Object.keys(Sekai.voices)) { const f = Sekai.voices[k];
+  Sekai.voices[k] = function () { __calls[k] = (__calls[k] || 0) + 1; return f.apply(this, arguments); }; }
+  const cb = AudioContext.prototype.createBuffer;
+  AudioContext.prototype.createBuffer = function () { __calls.buffers = (__calls.buffers || 0) + 1; return cb.apply(this, arguments); };`);
 await b.click(640, 400);
 await sleep(3000);
+// the last theme resumes on entry; the first half is meant to be the world's own rhythm
+await b.eval("Sekai.reference.stop()");
 await b.eval(`window.__stress = setInterval(() => {
   const S = Sekai, V = S.voices, t = S.audio.ctx.currentTime + 0.01, f = S.music.freq(Math.floor(Math.random() * 19));
   [V.bell, V.drop, V.pluck, V.chime][Math.floor(Math.random() * 4)](t, f, { pan: Math.random() * 2 - 1, vel: 0.5 });
