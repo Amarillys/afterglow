@@ -20,6 +20,7 @@
     if (onBeat) {
       Vo.bell(t + 0.02, f * 2, { pan, vel: 0.25, wet: 0.7, echo: 0.3, len: 0.8 });
       S.fx.sparkle(x, y, col);
+      S.emit("interact", { kind: "beat", x, y });
     }
     S.emit("played");
   }
@@ -28,18 +29,20 @@
     const deg = Math.min(19, Math.round(L.degAt(s.sy)) + 4);
     Vo.chime(A.ctx.currentTime + 0.005, S.music.freq(deg), { pan: panAt(s.sx), vel: 0.8 });
     S.fx.sparkle(s.sx, s.sy, s.col);
+    S.emit("interact", { kind: "soft", x: s.sx, y: s.sy });
   }
 
   function down(e) {
     A.resume();
     const x = e.clientX, y = e.clientY;
+    if (S.questions.hit(x, y)) return;
     const col = x < V.w / 2 ? S.fx.CYAN : S.fx.PINK;
     const deg = Math.round(L.degAt(y));
     strike(x, y, deg, col);
     const hit = S.shards.touch(x, y, performance.now());
     if (hit) chime(hit);
     ptrs.set(e.pointerId, {
-      x, y, deg, t: e.timeStamp, moved: e.timeStamp, set: 0, level: 0,
+      x, y, deg, t: e.timeStamp, t0: e.timeStamp, moved: e.timeStamp, set: 0, level: 0, dist: 0,
       trail: S.fx.trailStart(x, y, col),
       arc: Vo.arc(S.music.freq(deg), panAt(x)),
     });
@@ -55,6 +58,7 @@
     c.visible = e.pointerType === "mouse";
     const p = ptrs.get(e.pointerId);
     if (!p) {
+      if (c.visible && S.questions.hover(c.x, c.y)) return;
       const hit = S.shards.touch(c.x, c.y, performance.now());
       if (hit) chime(hit);
       return;
@@ -70,6 +74,7 @@
     p.t = ts;
     if (dist < 0.5) return;
     p.moved = ts;
+    p.dist += dist;
     S.fx.trailAdd(p.trail, x, y);
     const deg = Math.round(L.degAt(y));
     if (deg !== p.deg) {
@@ -89,6 +94,8 @@
   function up(e) {
     const p = ptrs.get(e.pointerId);
     if (!p) return;
+    const held = (e.timeStamp || p.t) - p.t0;
+    if (p.dist > 160 && p.dist / Math.max(1, held) < 0.6) S.emit("interact", { kind: "soft", x: p.x, y: p.y });
     p.arc.release();
     S.fx.trailEnd(p.trail);
     ptrs.delete(e.pointerId);
@@ -121,6 +128,7 @@
   function key(e) {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.target && e.target.closest && e.target.closest("button")) return;
+    if (S.questions.key(e.code)) return;
     if (e.code === "Space") {
       e.preventDefault();
       A.resume();

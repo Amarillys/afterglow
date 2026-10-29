@@ -20,7 +20,7 @@
 
   const C = (S.conductor = { running: false, t0: 0, spb: 60 / S.cfg.bpm, step: 0, chord: PROG[0] });
   const log = [];
-  let motifQueue = null, motifBar = -1, arpDeg = 10, wind = null, breathAt = 0;
+  let motifQueue = null, motifBar = -1, arpDeg = 10, wind = null, breathAt = 0, mood = null;
 
   C.start = function () {
     if (C.running || !A.ready) return;
@@ -50,6 +50,8 @@
   function play(step, t) {
     const spb = C.spb, bar = Math.floor(step / 8), pos = step % 8;
     const day = S.time.daylight;
+    mood = S.mood.mix();
+    const drive = 0.75 + 0.75 * mood.drive; // 1 when the attributes are balanced
     const thin = bar % 32 >= 20; // the rhythm rests for 12 bars in every 32
 
     if (pos === 0 && bar % 2 === 0) {
@@ -57,7 +59,7 @@
       C.chord = chord;
       log.push({ t, chord });
       if (log.length > 6) log.shift();
-      V.pad(t - 1.6, chord, spb * 8 - 0.4, day);
+      V.pad(t - 1.6, chord, spb * 8 - 0.4, day * (1.25 - 0.75 * mood.gentle));
       S.emit("chord", { t, chord });
     }
 
@@ -69,18 +71,18 @@
 
     if (!thin && bar >= 4 && pos % 2 === 0 && Math.random() < 0.85) {
       const beat = pos / 2, grow = Math.min(1, (bar - 4) / 12);
-      V.tick(t, beat % 2 === 0, (beat % 2 ? 0.1 : 0.14) * grow * (0.6 + 0.4 * day), beat % 2 ? 0.25 : -0.25);
+      V.tick(t, beat % 2 === 0, (beat % 2 ? 0.1 : 0.14) * grow * drive * (0.6 + 0.4 * day), beat % 2 ? 0.25 : -0.25);
     }
 
     if (!thin && bar >= 8 && pos === 0) {
       const grow = Math.min(1, (bar - 8) / 12);
-      V.pulse(t, 0.6 * grow * (0.5 + 0.5 * day));
+      V.pulse(t, 0.6 * grow * drive * (0.5 + 0.5 * day));
     }
 
     if (bar >= 2 && bar !== motifBar && (bar % 4 !== 3 || pos < 4)) {
       const growth = Math.min(1, 0.12 + (bar - 2) / 36);
       const swell = 0.55 + 0.45 * Math.sin((bar / 40) * Math.PI * 2);
-      const density = growth * swell * (0.55 + 0.45 * day) * (thin ? 0.6 : 1);
+      const density = growth * swell * (0.55 + 0.45 * day) * (thin ? 0.6 : 1) * drive * (S.questions.busy() ? 0.5 : 1);
       const p = (pos % 4 === 0 ? 0.7 : pos % 2 === 0 ? 0.36 : 0.12) * density;
       if (Math.random() < p) {
         arpDeg = nextDeg(arpDeg, pos % 4 === 0);
@@ -94,7 +96,7 @@
     V.bell(t, S.music.freq(deg), {
       vel: motif ? 0.85 : 0.45 + Math.random() * 0.2,
       pan: (lane - 1.5) * 0.36,
-      wet: motif ? 0.6 : 0.5,
+      wet: (motif ? 0.6 : 0.5) + 0.3 * (mood.calm - 1 / 3),
       echo: motif ? 0.26 : 0.18,
       len,
     });

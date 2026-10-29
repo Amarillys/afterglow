@@ -23,10 +23,14 @@
     S.floor.draw(ctx, now, heard);
     S.shards.draw(ctx, now, dt);
     S.shards.drawMotes(ctx, now);
+    S.questions.draw(ctx, now);
     S.fx.draw(ctx, dt);
     S.input.update(now);
     S.fx.drawCursor(ctx, S.input.cursor);
-    if (S.time.running) S.ui.update();
+    if (S.time.running) {
+      S.ui.update();
+      S.mood.update();
+    }
     requestAnimationFrame(frame);
   }
 
@@ -38,6 +42,8 @@
     }
     S.time.start();
     S.input.bind(canvas);
+    S.mood.start();
+    S.questions.start(50000);
     document.body.classList.add("entered");
   }
 

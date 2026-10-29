@@ -67,7 +67,10 @@
 
   const clockEl = $("clock-time"), subEl = $("clock-sub");
   let lastClock = "", lastSub = "";
+  let dark = false;
   ui.update = function () {
+    const lum = T.pal.lum;
+    if (dark ? lum > 0.64 : lum < 0.6) document.body.classList.toggle("night", (dark = !dark));
     const c = T.clock();
     if (c !== lastClock) clockEl.textContent = lastClock = c;
     const sub = "第 " + T.day + " 日 · 停留 " + T.duration(T.elapsed);
@@ -82,6 +85,7 @@
       timer = setTimeout(() => document.body.classList.add("idle"), 7000);
     };
     ["pointermove", "pointerdown", "keydown"].forEach((ev) => addEventListener(ev, wake, { passive: true }));
+    S.on("mood", wake);
     wake();
   }
 
@@ -94,6 +98,7 @@
     };
     setTimeout(hide, 16000);
     S.on("played", () => setTimeout(hide, 2500));
+    S.on("question", hide);
   }
 
   function buttons() {
@@ -120,11 +125,11 @@
       return deck.pop();
     };
     const show = (text) => {
-      if (busy || document.hidden) return;
+      if (busy || document.hidden || S.questions.busy()) return;
       busy = true;
       el.textContent = text;
-      el.style.left = 22 + Math.random() * 56 + "%";
-      el.style.top = 12 + Math.random() * 16 + "%";
+      el.style.left = 30 + Math.random() * 40 + "%";
+      el.style.top = 14 + Math.random() * 14 + "%";
       requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("show")));
       setTimeout(() => el.classList.remove("show"), 9000);
       setTimeout(() => (busy = false), 15000);
@@ -132,5 +137,6 @@
     const loop = (delay) => setTimeout(() => (show(take()), loop(110000 + Math.random() * 70000)), delay);
     loop(55000);
     S.on("hour", (h) => AT_HOUR[h] && show(AT_HOUR[h]));
+    S.on("question", () => el.classList.remove("show"));
   }
 })();

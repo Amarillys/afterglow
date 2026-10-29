@@ -86,6 +86,7 @@
     scaleAt: (y) => Math.max(0.0001, (y - V.hy) / (V.jy - V.hy)),
     // perspective scale of a note that is `dt` seconds away from the judge line
     depth: (dt) => 1 / (1 + (4.5 * Math.max(dt, 0)) / S.cfg.travel),
+    timeAt: (s) => ((1 / s - 1) * S.cfg.travel) / 4.5,
     floorX: (u, s) => V.cx + u * V.tw * 0.5 * s,
     floorY: (s) => V.hy + (V.jy - V.hy) * s,
   };

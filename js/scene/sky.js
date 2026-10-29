@@ -152,18 +152,24 @@
     const { x, y } = sky.moonPos(), R = Math.min(V.w, V.h) * 0.022;
     const vis = M.smooth(-0.15, 0.05, T.moonAlt) * (0.3 + 0.7 * T.night) * alpha;
     const g = ctx.createRadialGradient(x, y, 0, x, y, R * 6);
-    g.addColorStop(0, M.rgba([255, 255, 255], 0.45 * vis));
-    g.addColorStop(1, "rgba(255,255,255,0)");
+    g.addColorStop(0, M.rgba([255, 250, 240], 0.4 * vis));
+    g.addColorStop(1, "rgba(255,250,240,0)");
     ctx.fillStyle = g;
     ctx.fillRect(x - R * 6, y - R * 6, R * 12, R * 12);
-    ctx.fillStyle = M.rgba([255, 252, 247], 0.92 * vis);
+    ctx.save();
     ctx.beginPath();
     ctx.arc(x, y, R, 0, TAU);
+    ctx.clip();
+    ctx.fillStyle = M.rgba([255, 252, 247], 0.12 * vis);
     ctx.fill();
-    ctx.fillStyle = M.rgba(M.mix(T.pal.mid, T.pal.top, 0.5), 0.8 * vis);
+    // lit part = disc minus an offset shadow disc; the clip keeps the shadow inside the moon
     ctx.beginPath();
+    ctx.arc(x, y, R, 0, TAU);
+    ctx.moveTo(x + R * 0.42 + R * 0.9, y - R * 0.22);
     ctx.arc(x + R * 0.42, y - R * 0.22, R * 0.9, 0, TAU);
-    ctx.fill();
+    ctx.fillStyle = M.rgba([255, 252, 247], 0.95 * vis);
+    ctx.fill("evenodd");
+    ctx.restore();
   }
 
   function drawClouds(ctx, now, alpha) {
@@ -171,7 +177,7 @@
       const depth = 0.35 + c.y * 0.9;
       const w = V.w * 0.34 * depth, h = w * 0.34, span = V.w + w * 2;
       const x = ((c.x * span + now * 0.0000025 * V.w * c.sp * depth) % span) - w;
-      ctx.globalAlpha = c.a * alpha * (0.6 + 0.4 * T.daylight);
+      ctx.globalAlpha = c.a * alpha * (0.6 + 0.4 * T.daylight) * (1 - 0.55 * T.night);
       ctx.drawImage(sprites[c.k], x, V.hy - c.y * V.hy - h * 0.5, w, h);
     }
     ctx.globalAlpha = 1;
@@ -179,7 +185,7 @@
 
   function drawRuins(ctx, now, alpha) {
     const p = T.pal;
-    ctx.fillStyle = M.rgba(M.mix(M.mix(p.hor, p.top, 0.6), [140, 120, 150], 0.3), 0.4 * alpha);
+    ctx.fillStyle = M.rgba(M.mix(M.mix(p.hor, p.top, 0.6), M.mix([140, 120, 150], [62, 56, 92], T.night), 0.3 + 0.25 * T.night), (0.4 + 0.2 * T.night) * alpha);
     RUINS.forEach((r, i) => {
       const x = V.cx + r.x * V.w * 0.5, w = r.w * V.w, h = r.h * V.hy;
       if (r.k === "arch") arch(ctx, x, V.hy, w, h);

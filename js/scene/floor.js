@@ -29,7 +29,7 @@
   function veil(ctx) {
     const g = ctx.createLinearGradient(0, V.hy, 0, V.h);
     g.addColorStop(0, M.rgba(T.pal.hor, 0.1));
-    g.addColorStop(1, M.rgba(M.mix(T.pal.mid, [255, 250, 245], 0.3), 0.55));
+    g.addColorStop(1, M.rgba(M.mix(T.pal.mid, [255, 250, 245], 0.3), 0.55 - 0.3 * T.night));
     ctx.fillStyle = g;
     ctx.fillRect(0, V.hy, V.w, V.h - V.hy);
   }
@@ -127,7 +127,7 @@
     ctx.fillStyle = wide;
     ctx.fillRect(0, y - 0.5, V.w, 1);
     ctx.lineCap = "round";
-    ctx.strokeStyle = M.rgba([190, 192, 236], 0.16 + 0.2 * pulse);
+    ctx.strokeStyle = M.rgba(M.mix([190, 192, 236], S.mood.tint(), 0.5), 0.16 + 0.2 * pulse);
     ctx.lineWidth = 8;
     hline(ctx, x0, x1, y);
     ctx.strokeStyle = "rgba(255,255,255,0.95)";
@@ -181,7 +181,7 @@
   function horizon(ctx) {
     const g = ctx.createLinearGradient(0, 0, V.w, 0);
     g.addColorStop(0, "rgba(255,255,255,0)");
-    g.addColorStop(0.5, "rgba(255,255,255,0.9)");
+    g.addColorStop(0.5, M.rgba([255, 252, 248], 0.9 - 0.35 * T.night));
     g.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = g;
     ctx.fillRect(0, V.hy - 0.5, V.w, 1.5);

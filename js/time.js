@@ -4,15 +4,15 @@
 
   // sky keyframes by world hour; night stays pale so the page is always light
   const KEYS = [
-    { h: 0,    top: "#cfcde6", mid: "#dedaee", hor: "#ece4ef", glow: "#f3eef6" },
-    { h: 4.6,  top: "#d3cfe8", mid: "#e3dbee", hor: "#f1e3ea", glow: "#f7eef2" },
+    { h: 0,    top: "#5d5f90", mid: "#7c7aa6", hor: "#a495b6", glow: "#c3b2c8" },
+    { h: 4.6,  top: "#66679a", mid: "#8a83ac", hor: "#b9a3b8", glow: "#d9bcc0" },
     { h: 5.8,  top: "#dcd6ee", mid: "#efd9e4", hor: "#fddcd0", glow: "#ffe6cf" },
     { h: 7.2,  top: "#d6e0f3", mid: "#ebeaf3", hor: "#fdeee2", glow: "#fff3e0" },
     { h: 11,   top: "#d2e0f2", mid: "#e9eef6", hor: "#f9f6f2", glow: "#fffcf6" },
     { h: 15,   top: "#d6dff1", mid: "#ecedf4", hor: "#fcf2e8", glow: "#fff5e6" },
     { h: 17.4, top: "#dcd5ec", mid: "#f4dde1", hor: "#fed9c4", glow: "#ffe0c2" },
-    { h: 18.8, top: "#d3cde8", mid: "#e8d7e8", hor: "#f5dde0", glow: "#f9e7e8" },
-    { h: 20.5, top: "#cfcde6", mid: "#dedaee", hor: "#ece4ef", glow: "#f3eef6" },
+    { h: 18.8, top: "#8f8bba", mid: "#b7a6c6", hor: "#e1bfc4", glow: "#f0d0cc" },
+    { h: 20.5, top: "#5d5f90", mid: "#7c7aa6", hor: "#a495b6", glow: "#c3b2c8" },
   ].map((k) => ({ h: k.h, top: hex(k.top), mid: hex(k.mid), hor: hex(k.hor), glow: hex(k.glow) }));
 
   const T = (S.time = {
@@ -24,7 +24,7 @@
     day: 1,
     sunAlt: 0, sunAz: 0, moonAlt: 0, moonAz: 0,
     daylight: 0, night: 0, dawn: 0,
-    pal: { top: [0, 0, 0], mid: [0, 0, 0], hor: [0, 0, 0], glow: [0, 0, 0], ink: [0, 0, 0] },
+    pal: { top: [0, 0, 0], mid: [0, 0, 0], hor: [0, 0, 0], glow: [0, 0, 0], ink: [0, 0, 0], lum: 1 },
   });
   let lastWhole = Math.floor(T.hours);
 
@@ -68,7 +68,9 @@
     p.mid = M.mix(a.mid, b.mid, t);
     p.hor = M.mix(a.hor, b.hor, t);
     p.glow = M.mix(a.glow, b.glow, t);
-    p.ink = M.mix([110, 96, 124], p.top, 0.25);
+    p.lum = (0.2126 * p.top[0] + 0.7152 * p.top[1] + 0.0722 * p.top[2]) / 255;
+    // lines and text turn pale once the sky is dark enough
+    p.ink = M.mix(M.mix([110, 96, 124], [236, 228, 240], M.smooth(0.66, 0.5, p.lum)), p.top, 0.25);
   }
 
   const pad = (n) => String(n).padStart(2, "0");

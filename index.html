@@ -12,8 +12,14 @@
 
 <div id="whisper" aria-live="polite"></div>
 <div id="hint">轻触 · 拖动 · 键盘弹奏</div>
+<div id="question" aria-live="polite"></div>
 
 <div id="hud">
+  <div id="mood">
+    <div class="row" data-k="calm"><span class="name">平静</span><span class="bar"><b></b></span><span class="val">0</span></div>
+    <div class="row" data-k="gentle"><span class="name">温柔</span><span class="bar"><b></b></span><span class="val">0</span></div>
+    <div class="row" data-k="drive"><span class="name">动力</span><span class="bar"><b></b></span><span class="val">0</span></div>
+  </div>
   <div class="clock"><span id="clock-time">05:30</span><span id="clock-sub"></span></div>
   <div class="sign">千代世界<span>chiyo sekai</span></div>
   <div class="ctrl">
@@ -44,6 +50,8 @@
 <script src="js/scene/floor.js"></script>
 <script src="js/scene/shards.js"></script>
 <script src="js/scene/effects.js"></script>
+<script src="js/mood.js"></script>
+<script src="js/questions.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/input.js"></script>
 <script src="js/main.js"></script>

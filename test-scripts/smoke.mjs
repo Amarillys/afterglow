@@ -57,9 +57,29 @@ await sleep(500);
 await b.shot("04-keys");
 await level("keys");
 
-await sleep(30000);
-await level("t~40s (ticks + pulse)");
-await b.shot("05-later");
+// a question answered by key, then a second one answered by clicking the middle card
+const v = await b.eval("({ w: Sekai.view.w, h: Sekai.view.h, hy: Sekai.view.hy, jy: Sekai.view.jy })");
+console.log("viewport:", JSON.stringify(v));
+await b.eval("Sekai.questions.start(0)");
+await sleep(5600);
+await b.shot("05-question");
+console.log("question:", await b.eval("document.getElementById('question').textContent"));
+await b.key("Digit2", "2");
+await sleep(2600);
+await b.shot("06-answered");
+const qState = `({ busy: Sekai.questions.busy(), text: document.getElementById('question').textContent,
+  mood: localStorage.getItem('chiyo-sekai-mood'), panel: [...document.querySelectorAll('#mood .val')].map((e) => e.textContent).join('/') })`;
+console.log("after key:", JSON.stringify(await b.eval(qState)));
+await sleep(1000);
+await b.eval("Sekai.questions.start(0)");
+await sleep(5600);
+const fs = Math.min(19, Math.max(13, Math.min(v.w, v.h) / 40));
+await b.click(v.w / 2, v.hy + (v.jy - v.hy) * 0.92 - 10 - fs * 1.2);
+await sleep(2400);
+console.log("after click:", JSON.stringify(await b.eval(qState)));
+await sleep(16000);
+await level("t 9-42s (questions, ticks, pulse)");
+await b.shot("07-later");
 console.log("state:", JSON.stringify(await b.eval(`({
   ctx: Sekai.audio.ctx.state, step: Sekai.conductor.step, chord: Sekai.conductor.chord.name,
   notes: Sekai.floor.noteCount(), fx: Sekai.fx.count(), clock: Sekai.time.clock(), day: Sekai.time.day,

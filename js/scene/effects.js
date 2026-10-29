@@ -30,6 +30,10 @@
   };
   fx.wave = () => items.push({ k: "wave", x: V.cx, y: V.jy, age: 0, life: 3.4 });
   fx.sparkle = (x, y, col) => spray(x, y, 5, 45, [col || WHITE, WHITE]);
+  fx.fly = (x0, y0, x1, y1, col, life, done) => {
+    const mx = (x0 + x1) / 2 + (Math.random() - 0.5) * 160, my = Math.min(y0, y1) - 30 - Math.random() * 60;
+    items.push({ k: "fly", x0, y0, x1, y1, mx, my, col, age: 0, life, done });
+  };
 
   fx.trailStart = (x, y, col) => {
     const tr = { pts: [{ x, y, t: 0 }], col, live: true, clock: 0 };
@@ -133,7 +137,26 @@
     }
   }
 
-  const DRAW = { ripple: drawRipple, burst: drawBurst, lane: drawLane, wave: drawWave };
+  function drawFly(ctx, it) {
+    const pos = (t) => {
+      const u = 1 - t;
+      return [u * u * it.x0 + 2 * u * t * it.mx + t * t * it.x1, u * u * it.y0 + 2 * u * t * it.my + t * t * it.y1];
+    };
+    const t = it.age / it.life, e = t * t * (3 - 2 * t), [x, y] = pos(e);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 14);
+    g.addColorStop(0, M.rgba(it.col, 0.6));
+    g.addColorStop(1, M.rgba(it.col, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(x - 14, y - 14, 28, 28);
+    for (let j = 5; j >= 0; j--) {
+      const [px, py] = pos(Math.max(0, e - j * 0.025));
+      ctx.fillStyle = j ? M.rgba(it.col, 0.55 * (1 - j / 6)) : "rgba(255,255,255,0.95)";
+      diamond(ctx, px, py, j ? 2.6 - j * 0.3 : 3);
+      ctx.fill();
+    }
+  }
+
+  const DRAW = { ripple: drawRipple, burst: drawBurst, lane: drawLane, wave: drawWave, fly: drawFly };
 
   function drawTrail(ctx, tr, dt) {
     tr.clock += dt;
@@ -164,8 +187,10 @@
     for (let i = items.length - 1; i >= 0; i--) {
       const it = items[i];
       it.age += dt;
-      if (it.age >= it.life) items.splice(i, 1);
-      else DRAW[it.k](ctx, it);
+      if (it.age >= it.life) {
+        items.splice(i, 1);
+        if (it.done) it.done();
+      } else DRAW[it.k](ctx, it);
     }
     for (let i = sparks.length - 1; i >= 0; i--) {
       const p = sparks[i];
