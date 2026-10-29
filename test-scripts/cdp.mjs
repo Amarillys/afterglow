@@ -31,6 +31,7 @@ export async function launch({ width = 1280, height = 800, port = 9333 } = {}) {
   let id = 0;
   const pending = new Map();
   const logs = [];
+  const listeners = {};
   ws.onmessage = (m) => {
     const msg = JSON.parse(m.data);
     if (msg.id && pending.has(msg.id)) {
@@ -41,6 +42,8 @@ export async function launch({ width = 1280, height = 800, port = 9333 } = {}) {
     } else if (msg.method === "Runtime.exceptionThrown") {
       const d = msg.params.exceptionDetails;
       logs.push("EXCEPTION: " + (d.exception?.description || d.text) + " @" + d.url + ":" + d.lineNumber);
+    } else if (listeners[msg.method]) {
+      listeners[msg.method].forEach((fn) => fn(msg.params));
     }
   };
   const send = (method, params = {}) =>
@@ -55,6 +58,9 @@ export async function launch({ width = 1280, height = 800, port = 9333 } = {}) {
 
   const api = {
     logs, send,
+    on(method, fn) {
+      (listeners[method] ||= []).push(fn);
+    },
     async go(url) {
       await send("Page.navigate", { url });
       await sleep(1200);

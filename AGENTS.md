@@ -51,6 +51,7 @@ js/main.js          resize、帧循环（聚焦全速 / 失焦 3 fps / 隐藏只
 - 语法检查：`for f in js/*.js js/audio/*.js js/scene/*.js; do node --check "$f"; done`
 - 冒烟测试（无头 Edge + CDP，会点击/拖动/按键，打印音量峰值/RMS、状态和页面报错，截图到 `test-screenshots/`）：
   `node test-scripts/smoke.mjs`
+- 性能 / 泄露：`node test-scripts/leak-check.mjs [秒]`（长时间压力下的节点数、渲染负载、堆）、`node test-scripts/cost-check.mjs`（固定图各部分的渲染成本）。排查记录见 `docs/perf-investigation.md`。
 - 帧率：`node test-scripts/fps-check.mjs`（聚焦 / 失焦 / 隐藏三种状态的绘制帧率和 CPU 时间）。cdp.mjs 默认开启焦点模拟，让无头窗口按聚焦处理。
 - 节奏主题：`node test-scripts/smoke-ref.mjs [song.flac]`（会检查原曲没有被播放）；只看分析结果：`node test-scripts/analyze-check.mjs`；独立的 numpy 测速对照：`python test-scripts/tempo_check.py song.flac`。
 - 本机有 ffmpeg / ffprobe 和 numpy。浏览器能直接解码 24-bit FLAC，不需要转 wav。音频文件已在 `.gitignore`。

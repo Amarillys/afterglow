@@ -74,7 +74,7 @@
     const vHp = ctx.createBiquadFilter();
     vHp.type = "highpass";
     vHp.frequency.value = 180;
-    const conv = ctx.createConvolver();
+    const conv = (A.conv = ctx.createConvolver());
     conv.buffer = impulse(ctx, 6.5, 3.2);
     const vLp = ctx.createBiquadFilter();
     vLp.type = "lowpass";
