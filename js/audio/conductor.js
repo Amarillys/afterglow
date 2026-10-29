@@ -16,7 +16,7 @@
   // [beat, degree, length]; dawn rises, dusk answers and comes home
   const MOTIF = [[0, 10, 1], [1, 8, 1], [2, 11, 1], [3, 12, 1.8]];
   const DUSK = [[0, 12, 1], [1, 11, 1], [2, 8, 1], [3, 10, 1.8]];
-  const STEPS = [-2, -1, -1, 1, 1, 2, 0, 3, -3];
+  const STEPS = [-1, -1, 1, 1, -2, 2, 0, 0];
 
   const C = (S.conductor = { running: false, t0: 0, spb: 60 / S.cfg.bpm, step: 0, chord: PROG[0] });
   const log = [];
@@ -25,12 +25,14 @@
   C.start = function () {
     if (C.running || !A.ready) return;
     const now = A.ctx.currentTime;
-    C.t0 = now + 1.4;
+    C.t0 = now + 1.8;
     C.step = 0;
     C.running = true;
     wind = V.wind();
-    breathAt = now + 7;
-    motifQueue = { bar: 4, notes: MOTIF };
+    breathAt = now + 8;
+    const toDawn = (((6 - S.cfg.startHour + 24) % 24) / 24) * S.cfg.dayLength;
+    const dawnBar = Math.round((toDawn - 1.8) / (C.spb * 4));
+    motifQueue = { bar: dawnBar >= 2 && dawnBar <= 16 ? dawnBar : 4, notes: MOTIF };
     setInterval(tick, 50);
   };
 
@@ -48,14 +50,14 @@
   function play(step, t) {
     const spb = C.spb, bar = Math.floor(step / 8), pos = step % 8;
     const day = S.time.daylight;
-    const thin = bar % 32 >= 24; // the rhythm rests for 8 bars in every 32
+    const thin = bar % 32 >= 20; // the rhythm rests for 12 bars in every 32
 
     if (pos === 0 && bar % 2 === 0) {
       const chord = PROG[(bar / 2) % PROG.length];
       C.chord = chord;
       log.push({ t, chord });
       if (log.length > 6) log.shift();
-      V.pad(t - 1.2, chord, spb * 8 - 0.2, day);
+      V.pad(t - 1.6, chord, spb * 8 - 0.4, day);
       S.emit("chord", { t, chord });
     }
 
@@ -65,21 +67,21 @@
       motifBar = bar;
     }
 
-    if (!thin && bar >= 4 && pos % 2 === 0 && Math.random() < 0.92) {
-      const beat = pos / 2, grow = Math.min(1, (bar - 4) / 8);
-      V.tick(t, beat % 2 === 0, (beat % 2 ? 0.14 : 0.2) * grow * (0.6 + 0.4 * day), beat % 2 ? 0.25 : -0.25);
+    if (!thin && bar >= 4 && pos % 2 === 0 && Math.random() < 0.85) {
+      const beat = pos / 2, grow = Math.min(1, (bar - 4) / 12);
+      V.tick(t, beat % 2 === 0, (beat % 2 ? 0.1 : 0.14) * grow * (0.6 + 0.4 * day), beat % 2 ? 0.25 : -0.25);
     }
 
-    if (!thin && bar >= 8 && (pos === 0 || pos === 4)) {
-      const grow = Math.min(1, (bar - 8) / 8);
-      V.pulse(t, (pos ? 0.45 : 0.8) * grow * (0.5 + 0.5 * day));
+    if (!thin && bar >= 8 && pos === 0) {
+      const grow = Math.min(1, (bar - 8) / 12);
+      V.pulse(t, 0.6 * grow * (0.5 + 0.5 * day));
     }
 
-    if (bar >= 2 && bar !== motifBar && (bar % 8 !== 7 || pos < 4)) {
-      const growth = Math.min(1, 0.15 + (bar - 2) / 22);
-      const swell = 0.62 + 0.38 * Math.sin((bar / 48) * Math.PI * 2);
+    if (bar >= 2 && bar !== motifBar && (bar % 4 !== 3 || pos < 4)) {
+      const growth = Math.min(1, 0.12 + (bar - 2) / 36);
+      const swell = 0.55 + 0.45 * Math.sin((bar / 40) * Math.PI * 2);
       const density = growth * swell * (0.55 + 0.45 * day) * (thin ? 0.6 : 1);
-      const p = (pos % 4 === 0 ? 0.85 : pos % 2 === 0 ? 0.55 : 0.3) * density;
+      const p = (pos % 4 === 0 ? 0.7 : pos % 2 === 0 ? 0.36 : 0.12) * density;
       if (Math.random() < p) {
         arpDeg = nextDeg(arpDeg, pos % 4 === 0);
         note(t, arpDeg, false, 1);
@@ -90,10 +92,10 @@
   function note(t, deg, motif, len) {
     const lane = M.clamp(Math.floor((deg - 7) / 2.25), 0, 3);
     V.bell(t, S.music.freq(deg), {
-      vel: motif ? 0.95 : 0.55 + Math.random() * 0.2,
+      vel: motif ? 0.85 : 0.45 + Math.random() * 0.2,
       pan: (lane - 1.5) * 0.36,
-      wet: motif ? 0.55 : 0.42,
-      echo: motif ? 0.26 : 0.16,
+      wet: motif ? 0.6 : 0.5,
+      echo: motif ? 0.26 : 0.18,
       len,
     });
     S.emit("note", { t, lane, deg, motif });
@@ -112,11 +114,11 @@
   }
 
   function breathe(now) {
-    breathAt = now + 3 + Math.random() * 4;
+    breathAt = now + 5 + Math.random() * 6;
     const night = S.time.night;
     wind.forEach((w, i) => {
-      w.bp.frequency.setTargetAtTime((i ? 700 : 380) + Math.random() * (i ? 900 : 500), now, 2.5);
-      w.g.gain.setTargetAtTime((0.18 + Math.random() * 0.3) * (0.7 + 0.5 * night), now, 2.5);
+      w.bp.frequency.setTargetAtTime((i ? 700 : 380) + Math.random() * (i ? 900 : 500), now, 4);
+      w.g.gain.setTargetAtTime((0.18 + Math.random() * 0.3) * (0.7 + 0.5 * night), now, 4);
     });
   }
 
@@ -144,8 +146,8 @@
     const c = C.chordAt(t);
     const notes = c.notes.map((m) => m + 12).concat(c.notes[0] + 24);
     notes.forEach((m, i) =>
-      V.bell(t + i * 0.055, S.music.mtof(m), {
-        vel: 0.5, pan: -0.6 + (1.2 * i) / (notes.length - 1), wet: 0.6, echo: 0.2, len: 1.2,
+      V.bell(t + i * 0.09, S.music.mtof(m), {
+        vel: 0.42, pan: -0.6 + (1.2 * i) / (notes.length - 1), wet: 0.6, echo: 0.2, len: 1.2,
       })
     );
   };

@@ -8,7 +8,7 @@
     const out = A.strip({ pan, dry: 0.7, wet: 0.6, echo: 0.2 });
     const lp = ctx.createBiquadFilter();
     lp.type = "lowpass";
-    lp.frequency.value = 1500;
+    lp.frequency.value = 1300;
     lp.Q.value = 0.4;
     const g = ctx.createGain();
     g.gain.value = 0;
@@ -23,9 +23,9 @@
       return o;
     });
     const vib = ctx.createOscillator();
-    vib.frequency.value = 4.6;
+    vib.frequency.value = 4;
     const vibAmt = ctx.createGain();
-    vibAmt.gain.value = 5;
+    vibAmt.gain.value = 4;
     vib.connect(vibAmt);
     oscs.forEach((o) => vibAmt.connect(o.detune));
     vib.start(t);
@@ -53,8 +53,8 @@
   // background chord: detuned saws through a slow lowpass swell
   V.pad = function (t, chord, dur, bright) {
     if (!A.ready) return;
-    const ctx = A.ctx, fadeIn = 2.4, fadeOut = 2.8, end = t + dur + fadeOut;
-    const cut = 700 + 900 * bright;
+    const ctx = A.ctx, fadeIn = 3.2, fadeOut = 3.6, end = t + dur + fadeOut;
+    const cut = 650 + 750 * bright;
     const env = (peak, dest) => {
       const g = ctx.createGain();
       g.gain.setValueAtTime(0, t);
@@ -118,15 +118,15 @@
     if (!A.ready) return;
     const ctx = A.ctx;
     const out = A.strip({ dry: 1, wet: 0.2 });
-    [[92, 48, 0.42, "sine"], [184, 120, 0.06, "triangle"]].forEach(([f0, f1, amp, type]) => {
+    [[80, 46, 0.36, "sine"], [160, 110, 0.04, "triangle"]].forEach(([f0, f1, amp, type]) => {
       const o = ctx.createOscillator();
       o.type = type;
       o.frequency.setValueAtTime(f0, t);
       o.frequency.exponentialRampToValueAtTime(f1, t + 0.18);
       const g = ctx.createGain();
       g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(amp * vel, t + 0.008);
-      g.gain.setTargetAtTime(0, t + 0.01, 0.12);
+      g.gain.linearRampToValueAtTime(amp * vel, t + 0.014);
+      g.gain.setTargetAtTime(0, t + 0.016, 0.16);
       o.connect(g).connect(out.input);
       o.start(t);
       o.stop(t + 0.9);
@@ -142,22 +142,22 @@
     src.buffer = A.noise;
     const bp = ctx.createBiquadFilter();
     bp.type = "bandpass";
-    bp.frequency.value = high ? 3600 : 2500;
-    bp.Q.value = 6;
+    bp.frequency.value = high ? 2600 : 1900;
+    bp.Q.value = 5;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.5 * vel, t + 0.001);
-    g.gain.setTargetAtTime(0, t + 0.002, 0.012);
+    g.gain.linearRampToValueAtTime(0.45 * vel, t + 0.002);
+    g.gain.setTargetAtTime(0, t + 0.003, 0.016);
     src.connect(bp).connect(g).connect(out.input);
     src.start(t, Math.random() * 5, 0.12);
     const o = ctx.createOscillator();
-    o.frequency.value = high ? 1760 : 1174.66;
+    o.frequency.value = high ? 880 : 587.33;
     const og = ctx.createGain();
     og.gain.setValueAtTime(0, t);
-    og.gain.linearRampToValueAtTime(0.03 * vel, t + 0.002);
-    og.gain.setTargetAtTime(0, t + 0.003, 0.03);
+    og.gain.linearRampToValueAtTime(0.05 * vel, t + 0.002);
+    og.gain.setTargetAtTime(0, t + 0.003, 0.05);
     o.connect(og).connect(out.input);
     o.start(t);
-    o.stop(t + 0.25);
+    o.stop(t + 0.4);
   };
 })();

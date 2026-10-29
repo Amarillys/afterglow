@@ -21,7 +21,7 @@
     const g = ctx.createLinearGradient(0, V.hy, 0, V.h);
     g.addColorStop(0, M.rgba(M.mix(p.hor, p.mid, 0.25), 1));
     g.addColorStop(0.35, M.rgba(M.mix(p.mid, p.top, 0.35), 1));
-    g.addColorStop(1, M.rgba(M.mix(p.top, [236, 240, 252], 0.25), 1));
+    g.addColorStop(1, M.rgba(M.mix(p.top, [248, 238, 240], 0.3), 1));
     ctx.fillStyle = g;
     ctx.fillRect(0, V.hy, V.w, V.h - V.hy);
   }
@@ -29,7 +29,7 @@
   function veil(ctx) {
     const g = ctx.createLinearGradient(0, V.hy, 0, V.h);
     g.addColorStop(0, M.rgba(T.pal.hor, 0.1));
-    g.addColorStop(1, M.rgba(M.mix(T.pal.mid, [255, 255, 255], 0.3), 0.55));
+    g.addColorStop(1, M.rgba(M.mix(T.pal.mid, [255, 250, 245], 0.3), 0.55));
     ctx.fillStyle = g;
     ctx.fillRect(0, V.hy, V.w, V.h - V.hy);
   }
@@ -37,7 +37,7 @@
   function glint(ctx, now) {
     ctx.fillStyle = "#fff";
     for (const g of glints) {
-      const a = Math.pow(Math.max(0, Math.sin(now * 0.0007 * g.sp + g.ph)), 8);
+      const a = Math.pow(Math.max(0, Math.sin(now * 0.00045 * g.sp + g.ph)), 8);
       if (a < 0.02) continue;
       const x = L.floorX(g.u, g.s), y = L.floorY(g.s), r = 0.8 + g.s * 1.6;
       if (x < -10 || x > V.w + 10 || y > V.h) continue;
@@ -55,12 +55,12 @@
   function track(ctx, heard) {
     const sB = L.scaleAt(V.h), ink = T.pal.ink;
     let flash = 0;
-    for (const t of chords) if (heard >= t) flash = Math.max(flash, Math.exp(-(heard - t) * 1.3));
+    for (const t of chords) if (heard >= t) flash = Math.max(flash, Math.exp(-(heard - t) * 0.8));
 
     const fill = ctx.createLinearGradient(0, V.hy, 0, V.h);
     fill.addColorStop(0, "rgba(255,255,255,0)");
-    fill.addColorStop(0.72, M.rgba([255, 255, 255], 0.42 + 0.14 * flash));
-    fill.addColorStop(1, M.rgba([255, 255, 255], 0.3));
+    fill.addColorStop(0.72, M.rgba([255, 252, 248], 0.42 + 0.1 * flash));
+    fill.addColorStop(1, M.rgba([255, 252, 248], 0.3));
     ctx.fillStyle = fill;
     ctx.beginPath();
     ctx.moveTo(V.cx, V.hy);
@@ -98,7 +98,7 @@
       const dt = C.t0 + b * C.spb - heard;
       if (dt < -0.15 || dt > far) continue;
       const s = L.depth(dt), y = L.floorY(s);
-      ctx.globalAlpha = (b % 4 === 0 ? 0.42 : 0.16) * M.smooth(far, TRAVEL * 0.8, dt) * M.smooth(-0.15, 0.12, dt);
+      ctx.globalAlpha = (b % 4 === 0 ? 0.34 : 0.12) * M.smooth(far, TRAVEL * 0.8, dt) * M.smooth(-0.15, 0.12, dt);
       ctx.lineWidth = (b % 4 === 0 ? 1.4 : 1) * Math.max(0.6, s);
       ctx.beginPath();
       ctx.moveTo(L.floorX(-1, s), y);
@@ -118,7 +118,7 @@
   function judge(ctx, heard) {
     const C = S.conductor;
     let pulse = 0;
-    if (C.running && heard > C.t0) pulse = Math.exp(-(((heard - C.t0) / C.spb) % 1) * C.spb * 5);
+    if (C.running && heard > C.t0) pulse = Math.exp(-(((heard - C.t0) / C.spb) % 1) * C.spb * 3.5);
     const y = V.jy, x0 = L.floorX(-1, 1), x1 = L.floorX(1, 1);
     const wide = ctx.createLinearGradient(0, 0, V.w, 0);
     wide.addColorStop(0, "rgba(255,255,255,0)");
@@ -127,7 +127,7 @@
     ctx.fillStyle = wide;
     ctx.fillRect(0, y - 0.5, V.w, 1);
     ctx.lineCap = "round";
-    ctx.strokeStyle = M.rgba([150, 210, 240], 0.16 + 0.3 * pulse);
+    ctx.strokeStyle = M.rgba([190, 192, 236], 0.16 + 0.2 * pulse);
     ctx.lineWidth = 8;
     hline(ctx, x0, x1, y);
     ctx.strokeStyle = "rgba(255,255,255,0.95)";
@@ -162,7 +162,7 @@
       const s = L.depth(dt), y = L.floorY(s), x = L.floorX(-0.75 + n.lane * 0.5, s);
       const hw = V.tw * 0.11 * s, hh = Math.max(1.4, 6 * s), pad = 4 * s;
       const a = M.smooth(TRAVEL * 1.15, TRAVEL * 0.9, dt);
-      const col = n.motif ? [246, 168, 204] : [138, 166, 232];
+      const col = n.motif ? [242, 164, 188] : [158, 154, 220];
       ctx.globalAlpha = a * 0.32;
       ctx.fillStyle = M.rgba(col, 1);
       rr(ctx, x - hw - pad, y - hh - pad, (hw + pad) * 2, (hh + pad) * 2, hh + pad);

@@ -3,7 +3,7 @@
   const S = window.Sekai, M = S.m, V = S.view, L = S.layout, T = S.time;
   const fx = (S.fx = {});
   const TAU = Math.PI * 2;
-  const CYAN = [120, 200, 236], PINK = [240, 150, 200], LAV = [160, 156, 230], WHITE = [255, 255, 255];
+  const CYAN = [132, 192, 228], PINK = [240, 156, 186], GOLD = [246, 200, 150], WHITE = [255, 255, 255];
   const items = [], sparks = [], trails = [];
   fx.CYAN = CYAN;
   fx.PINK = PINK;
@@ -13,23 +13,23 @@
       const a = Math.random() * TAU, v = speed * (0.3 + Math.random() * 0.7);
       sparks.push({
         x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - speed * 0.25,
-        age: 0, life: 0.7 + Math.random() * 0.8, r: 1 + Math.random() * 1.8, col: M.pick(cols),
+        age: 0, life: 1 + Math.random(), r: 1 + Math.random() * 1.8, col: M.pick(cols),
       });
     }
   }
 
-  fx.ripple = (x, y, s, col) => items.push({ k: "ripple", x, y, s, col, age: 0, life: 2.2 });
+  fx.ripple = (x, y, s, col) => items.push({ k: "ripple", x, y, s, col, age: 0, life: 3 });
   fx.burst = (x, y, col) => {
-    items.push({ k: "burst", x, y, col, age: 0, life: 1.1, rot: Math.random() * 0.4 });
-    spray(x, y, 12, 110, [col, WHITE, LAV]);
+    items.push({ k: "burst", x, y, col, age: 0, life: 1.6, rot: Math.random() * 0.4 });
+    spray(x, y, 8, 80, [col, WHITE, GOLD]);
   };
   fx.laneHit = (lane, motif) => {
     const x = L.floorX(-0.75 + lane * 0.5, 1);
-    items.push({ k: "lane", x, y: V.jy, col: motif ? PINK : CYAN, age: 0, life: 0.75 });
-    spray(x, V.jy, motif ? 8 : 4, 70, [motif ? PINK : CYAN, WHITE]);
+    items.push({ k: "lane", x, y: V.jy, col: motif ? PINK : CYAN, age: 0, life: 1.1 });
+    spray(x, V.jy, motif ? 6 : 3, 50, [motif ? PINK : CYAN, WHITE]);
   };
-  fx.wave = () => items.push({ k: "wave", x: V.cx, y: V.jy, age: 0, life: 2.6 });
-  fx.sparkle = (x, y, col) => spray(x, y, 7, 60, [col || WHITE, WHITE]);
+  fx.wave = () => items.push({ k: "wave", x: V.cx, y: V.jy, age: 0, life: 3.4 });
+  fx.sparkle = (x, y, col) => spray(x, y, 5, 45, [col || WHITE, WHITE]);
 
   fx.trailStart = (x, y, col) => {
     const tr = { pts: [{ x, y, t: 0 }], col, live: true, clock: 0 };
@@ -45,7 +45,7 @@
   function drawRipple(ctx, it) {
     const sc = Math.max(0.25, it.s);
     for (let i = 0; i < 3; i++) {
-      const a = it.age - i * 0.16;
+      const a = it.age - i * 0.24;
       if (a <= 0) continue;
       const t = a / it.life, e = 1 - Math.pow(1 - Math.min(1, t), 3);
       const rx = (12 + e * V.tw * 0.28) * sc * (1 - i * 0.18), ry = rx * 0.32;
@@ -105,7 +105,7 @@
     const t = it.age / it.life, a = 1 - t, w = V.tw * 0.12, h = V.h * 0.32 * (0.6 + 0.4 * t);
     const g = ctx.createLinearGradient(0, it.y - h, 0, it.y);
     g.addColorStop(0, M.rgba(it.col, 0));
-    g.addColorStop(1, M.rgba(it.col, 0.3 * a));
+    g.addColorStop(1, M.rgba(it.col, 0.22 * a));
     ctx.fillStyle = g;
     ctx.fillRect(it.x - w, it.y - h, w * 2, h);
     ctx.save();
@@ -137,7 +137,7 @@
 
   function drawTrail(ctx, tr, dt) {
     tr.clock += dt;
-    const keep = 1.3;
+    const keep = 1.8;
     while (tr.pts.length > 1 && tr.clock - tr.pts[0].t > keep) tr.pts.shift();
     if (!tr.live && (tr.pts.length < 2 || tr.clock - tr.pts[tr.pts.length - 1].t > keep)) return false;
     ctx.lineCap = "round";
@@ -174,8 +174,8 @@
         sparks.splice(i, 1);
         continue;
       }
-      p.vx *= Math.exp(-dt * 2.2);
-      p.vy = p.vy * Math.exp(-dt * 2.2) - 12 * dt;
+      p.vx *= Math.exp(-dt * 1.8);
+      p.vy = p.vy * Math.exp(-dt * 1.8) - 8 * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       const a = 1 - p.age / p.life;

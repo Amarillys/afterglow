@@ -57,8 +57,8 @@ await sleep(500);
 await b.shot("04-keys");
 await level("keys");
 
-await sleep(26000);
-await level("t~35s (ticks + pulse)");
+await sleep(30000);
+await level("t~40s (ticks + pulse)");
 await b.shot("05-later");
 console.log("state:", JSON.stringify(await b.eval(`({
   ctx: Sekai.audio.ctx.state, step: Sekai.conductor.step, chord: Sekai.conductor.chord.name,

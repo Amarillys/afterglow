@@ -8,11 +8,11 @@
   };
 
   S.cfg = {
-    bpm: 72,
-    dayLength: num("day", 720),        // real seconds per world day
+    bpm: 60,
+    dayLength: num("day", 1440),       // real seconds per world day
     startHour: num("hour", 5.5) % 24,
-    travel: 2.4,                       // seconds a note takes from horizon to judge line
-    lookahead: 3.2,                    // must exceed travel so notes are known before they appear
+    travel: 3.4,                       // seconds a note takes from horizon to judge line
+    lookahead: 4.4,                    // must exceed travel so notes are known before they appear
     maxDpr: 2,
   };
 

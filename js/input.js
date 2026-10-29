@@ -10,7 +10,7 @@
     const t = A.ctx.currentTime + 0.005, f = S.music.freq(deg), pan = panAt(x);
     const onBeat = Math.abs(S.conductor.beatOffset(A.heard() + 0.01)) < 0.07;
     if (y < V.hy) {
-      Vo.bell(t, f, { pan, vel: 0.85, wet: 0.55, echo: 0.24 });
+      Vo.bell(t, f, { pan, vel: 0.75, wet: 0.6, echo: 0.24 });
       S.fx.burst(x, y, col);
     } else {
       const s = L.scaleAt(y);
@@ -73,8 +73,8 @@
     S.fx.trailAdd(p.trail, x, y);
     const deg = Math.round(L.degAt(y));
     if (deg !== p.deg) {
-      const dir = deg > p.deg ? 1 : -1, n = Math.min(6, Math.abs(deg - p.deg)), t = A.ctx.currentTime + 0.005;
-      for (let i = 1; i <= n; i++) Vo.pluck(t + (i - 1) * 0.03, S.music.freq(p.deg + dir * i), { pan: panAt(x), vel: 0.7 });
+      const dir = deg > p.deg ? 1 : -1, n = Math.min(5, Math.abs(deg - p.deg)), t = A.ctx.currentTime + 0.005;
+      for (let i = 1; i <= n; i++) Vo.pluck(t + (i - 1) * 0.045, S.music.freq(p.deg + dir * i), { pan: panAt(x), vel: 0.6 });
       p.deg = deg;
     }
     const hit = S.shards.touch(x, y, performance.now());

@@ -17,8 +17,8 @@
     for (let i = 0; i < 12; i++) {
       const x = 50 + r() * 220, y = 58 + (r() - 0.5) * 26, rad = 18 + r() * 34;
       const grd = g.createRadialGradient(x, y, 0, x, y, rad);
-      grd.addColorStop(0, "rgba(255,255,255,0.55)");
-      grd.addColorStop(1, "rgba(255,255,255,0)");
+      grd.addColorStop(0, "rgba(255,251,246,0.55)");
+      grd.addColorStop(1, "rgba(255,251,246,0)");
       g.fillStyle = grd;
       g.beginPath();
       g.arc(x, y, rad, 0, TAU);
@@ -103,7 +103,7 @@
     if (T.night < 0.02) return;
     ctx.fillStyle = "#fff";
     for (const s of stars) {
-      const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(now * 0.001 * s.sp + s.ph));
+      const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(now * 0.0006 * s.sp + s.ph));
       ctx.globalAlpha = T.night * tw * M.smooth(0.92, 0.6, s.y);
       ctx.beginPath();
       ctx.arc(s.x * V.w, s.y * V.hy, s.r, 0, TAU);
@@ -131,7 +131,7 @@
     if (T.sunAlt < -0.2) return;
     const { x, y } = sky.sunPos(), R = Math.min(V.w, V.h) * 0.03;
     const vis = M.smooth(-0.2, 0.02, T.sunAlt) * alpha;
-    const warm = M.mix([255, 226, 200], [255, 248, 236], T.daylight);
+    const warm = M.mix([255, 222, 192], [255, 244, 228], T.daylight);
     const g = ctx.createRadialGradient(x, y, 0, x, y, R * 9);
     g.addColorStop(0, M.rgba(warm, 0.6 * vis));
     g.addColorStop(0.22, M.rgba(warm, 0.22 * vis));
@@ -156,7 +156,7 @@
     g.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = g;
     ctx.fillRect(x - R * 6, y - R * 6, R * 12, R * 12);
-    ctx.fillStyle = M.rgba([255, 255, 255], 0.92 * vis);
+    ctx.fillStyle = M.rgba([255, 252, 247], 0.92 * vis);
     ctx.beginPath();
     ctx.arc(x, y, R, 0, TAU);
     ctx.fill();
@@ -170,7 +170,7 @@
     for (const c of clouds) {
       const depth = 0.35 + c.y * 0.9;
       const w = V.w * 0.34 * depth, h = w * 0.34, span = V.w + w * 2;
-      const x = ((c.x * span + now * 0.000004 * V.w * c.sp * depth) % span) - w;
+      const x = ((c.x * span + now * 0.0000025 * V.w * c.sp * depth) % span) - w;
       ctx.globalAlpha = c.a * alpha * (0.6 + 0.4 * T.daylight);
       ctx.drawImage(sprites[c.k], x, V.hy - c.y * V.hy - h * 0.5, w, h);
     }
@@ -179,12 +179,12 @@
 
   function drawRuins(ctx, now, alpha) {
     const p = T.pal;
-    ctx.fillStyle = M.rgba(M.mix(M.mix(p.hor, p.top, 0.6), [118, 126, 168], 0.3), 0.4 * alpha);
+    ctx.fillStyle = M.rgba(M.mix(M.mix(p.hor, p.top, 0.6), [140, 120, 150], 0.3), 0.4 * alpha);
     RUINS.forEach((r, i) => {
       const x = V.cx + r.x * V.w * 0.5, w = r.w * V.w, h = r.h * V.hy;
       if (r.k === "arch") arch(ctx, x, V.hy, w, h);
       else if (r.k === "pillar") pillar(ctx, x, V.hy, w, h, r.broken);
-      else cube(ctx, x, V.hy - h + Math.sin(now * 0.0004 + i) * V.hy * 0.012, w, r.rot + now * 0.00003 * (i % 2 ? 1 : -1));
+      else cube(ctx, x, V.hy - h + Math.sin(now * 0.00025 + i) * V.hy * 0.012, w, r.rot + now * 0.00002 * (i % 2 ? 1 : -1));
     });
   }
 

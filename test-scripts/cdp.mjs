@@ -1,12 +1,12 @@
 // Minimal CDP driver for headless Edge. Used by smoke.mjs / hours.mjs.
 import { spawn } from "node:child_process";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const EDGE = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
 const ROOT = resolve(import.meta.dirname, "..");
-export const SHOTS = resolve(ROOT, "test-screenshots");
+export const SHOTS = resolve(ROOT, "test-screenshots", readFileSync(resolve(ROOT, "VERSION"), "utf8").trim());
 export const pageUrl = (q = "") => pathToFileURL(resolve(ROOT, "index.html")).href + q;
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

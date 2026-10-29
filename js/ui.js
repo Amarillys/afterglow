@@ -126,11 +126,11 @@
       el.style.left = 22 + Math.random() * 56 + "%";
       el.style.top = 12 + Math.random() * 16 + "%";
       requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("show")));
-      setTimeout(() => el.classList.remove("show"), 7500);
-      setTimeout(() => (busy = false), 12000);
+      setTimeout(() => el.classList.remove("show"), 9000);
+      setTimeout(() => (busy = false), 15000);
     };
-    const loop = (delay) => setTimeout(() => (show(take()), loop(90000 + Math.random() * 60000)), delay);
-    loop(42000);
+    const loop = (delay) => setTimeout(() => (show(take()), loop(110000 + Math.random() * 70000)), delay);
+    loop(55000);
     S.on("hour", (h) => AT_HOUR[h] && show(AT_HOUR[h]));
   }
 })();

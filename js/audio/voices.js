@@ -37,9 +37,9 @@
     if (!A.ready) return;
     const amp = 0.17 * (o.vel ?? 1) * trim(freq);
     const out = A.strip({ pan: o.pan, dry: o.dry ?? 0.9, wet: o.wet ?? 0.45, echo: o.echo ?? 0.18 });
-    const lp = lowpass(out.input, Math.min(7000, freq * 7));
+    const lp = lowpass(out.input, Math.min(5600, freq * 6));
     const len = o.len ?? 1;
-    BELL.forEach(([r, a, d]) => partial(t, lp, freq * r, amp * a, d * len, 0.003));
+    BELL.forEach(([r, a, d]) => partial(t, lp, freq * r, amp * a, d * len, 0.006));
     partial(t, lp, freq * 1.003, amp * 0.25, 2.2 * len, 0.03);
   };
 
@@ -49,10 +49,10 @@
     const near = o.near ?? 1;
     const amp = 0.24 * (o.vel ?? 1) * trim(freq) * (0.55 + 0.45 * near);
     const out = A.strip({ pan: o.pan, dry: 0.35 + 0.65 * near, wet: 0.65 - 0.3 * near, echo: 0.12 });
-    const lp = lowpass(out.input, 1400 + 4200 * near);
+    const lp = lowpass(out.input, 1200 + 3400 * near);
     const ctx = A.ctx;
     const osc = ctx.createOscillator();
-    osc.frequency.setValueAtTime(freq * 0.82, t);
+    osc.frequency.setValueAtTime(freq * 0.9, t);
     osc.frequency.exponentialRampToValueAtTime(freq, t + 0.035);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, t);
@@ -62,7 +62,7 @@
     osc.start(t);
     osc.stop(t + 2.2);
     partial(t, lp, freq * 2, amp * 0.22, 0.5, 0.002);
-    partial(t, lp, freq * 4, amp * 0.1, 0.12, 0.001);
+    partial(t, lp, freq * 4, amp * 0.06, 0.12, 0.001);
   };
 
   // floating shards: inharmonic, slightly different every time
@@ -113,9 +113,9 @@
     src.buffer = buf;
     src.playbackRate.value = rate;
     const g = ctx.createGain();
-    g.gain.value = 0.16 * (o.vel ?? 1) * trim(freq);
+    g.gain.value = 0.13 * (o.vel ?? 1) * trim(freq);
     const out = A.strip({ pan: o.pan, dry: 0.8, wet: 0.55, echo: 0.22 });
-    src.connect(g).connect(lowpass(out.input, 5200));
+    src.connect(g).connect(lowpass(out.input, 3800));
     src.start(t);
   };
 })();

@@ -4,15 +4,15 @@
 
   // sky keyframes by world hour; night stays pale so the page is always light
   const KEYS = [
-    { h: 0,    top: "#c9cfe8", mid: "#d8dcf0", hor: "#e7e6f3", glow: "#eef0fb" },
-    { h: 4.6,  top: "#cdd1ea", mid: "#dcdcf0", hor: "#ece4f0", glow: "#f2eef6" },
-    { h: 5.8,  top: "#d6daf1", mid: "#ead9ea", hor: "#fbdcd6", glow: "#ffe7d3" },
-    { h: 7.2,  top: "#cfe2f7", mid: "#e4ecf8", hor: "#fbeee6", glow: "#fff4e4" },
-    { h: 11,   top: "#c9e1f7", mid: "#e2eefa", hor: "#f5f8fd", glow: "#ffffff" },
-    { h: 15,   top: "#cfe0f6", mid: "#e6eef9", hor: "#f9f4ee", glow: "#fff6ea" },
-    { h: 17.4, top: "#d6d6f0", mid: "#f1dde6", hor: "#fddccc", glow: "#ffe2c8" },
-    { h: 18.8, top: "#cdcfec", mid: "#e2d7ec", hor: "#f1dde6", glow: "#f6e8ee" },
-    { h: 20.5, top: "#c9cfe8", mid: "#d8dcf0", hor: "#e7e6f3", glow: "#eef0fb" },
+    { h: 0,    top: "#cfcde6", mid: "#dedaee", hor: "#ece4ef", glow: "#f3eef6" },
+    { h: 4.6,  top: "#d3cfe8", mid: "#e3dbee", hor: "#f1e3ea", glow: "#f7eef2" },
+    { h: 5.8,  top: "#dcd6ee", mid: "#efd9e4", hor: "#fddcd0", glow: "#ffe6cf" },
+    { h: 7.2,  top: "#d6e0f3", mid: "#ebeaf3", hor: "#fdeee2", glow: "#fff3e0" },
+    { h: 11,   top: "#d2e0f2", mid: "#e9eef6", hor: "#f9f6f2", glow: "#fffcf6" },
+    { h: 15,   top: "#d6dff1", mid: "#ecedf4", hor: "#fcf2e8", glow: "#fff5e6" },
+    { h: 17.4, top: "#dcd5ec", mid: "#f4dde1", hor: "#fed9c4", glow: "#ffe0c2" },
+    { h: 18.8, top: "#d3cde8", mid: "#e8d7e8", hor: "#f5dde0", glow: "#f9e7e8" },
+    { h: 20.5, top: "#cfcde6", mid: "#dedaee", hor: "#ece4ef", glow: "#f3eef6" },
   ].map((k) => ({ h: k.h, top: hex(k.top), mid: hex(k.mid), hor: hex(k.hor), glow: hex(k.glow) }));
 
   const T = (S.time = {
@@ -68,7 +68,7 @@
     p.mid = M.mix(a.mid, b.mid, t);
     p.hor = M.mix(a.hor, b.hor, t);
     p.glow = M.mix(a.glow, b.glow, t);
-    p.ink = M.mix([93, 102, 136], p.top, 0.25);
+    p.ink = M.mix([110, 96, 124], p.top, 0.25);
   }
 
   const pad = (n) => String(n).padStart(2, "0");

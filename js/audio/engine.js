@@ -72,7 +72,7 @@
     conv.buffer = impulse(ctx, 6.5, 3.2);
     const vLp = ctx.createBiquadFilter();
     vLp.type = "lowpass";
-    vLp.frequency.value = 5200;
+    vLp.frequency.value = 4600;
     const vOut = ctx.createGain();
     vOut.gain.value = 0.9;
     A.verb.connect(vHp).connect(conv).connect(vLp).connect(vOut).connect(A.bus);
@@ -84,7 +84,7 @@
     dL.delayTime.value = dR.delayTime.value = beat * 0.75;
     const tone = ctx.createBiquadFilter();
     tone.type = "lowpass";
-    tone.frequency.value = 2600;
+    tone.frequency.value = 2200;
     const fb = ctx.createGain();
     fb.gain.value = 0.38;
     const merge = ctx.createChannelMerger(2);

@@ -8,7 +8,7 @@
 - 直接双击 `index.html` 即可（file:// 可用，无构建、无依赖、无网络请求）。
 - URL 参数（调试 / 想直接看某个时段时用）：
   - `?hour=17.5` 起始的世界时刻（默认 5.5，即黎明前）
-  - `?day=720` 一个世界日对应的真实秒数（默认 720 = 12 分钟）
+  - `?day=1440` 一个世界日对应的真实秒数（默认 1440 = 24 分钟，现实 1 秒 ≈ 世界 1 分钟）
 
 ## 结构
 ```
@@ -34,6 +34,7 @@ js/main.js          resize、帧循环、进入世界
 - 文件保持在 ~200 行内，按职责拆分。
 - 背景必须一直是浅色，夜晚也只是偏淡紫，不要做成深色。
 - 不加分数、判定、失败这类有压力的机制。
+- 用户偏好：节奏慢、声部稀、颜色偏暖、字不要太小（v0.2.0 按这个方向调过一次）。
 - 所有玩家能发出的音都在 D 大调五声音阶里（`S.music`），所以随便按都不会和背景冲突。
 - 画面与音频同步：音符和拍线用 `S.audio.heard()`（扣除输出延迟后的音频时钟）定位，不用 performance.now()。
 - `S.cfg.lookahead` 必须大于 `S.cfg.travel`，否则音符会在轨道中途凭空出现。
@@ -44,5 +45,6 @@ js/main.js          resize、帧循环、进入世界
   `node test-scripts/smoke.mjs`
 - 各时段画面：`node test-scripts/hours.mjs 5.5 12.5 17.6 23`
 - Edge 路径：`C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe`（本机没有 Chrome）；Node 26 自带 WebSocket，无需安装依赖。
+- 截图按 `VERSION` 分目录存放（`test-screenshots/0.2.0/`），方便前后对比。
 - `test-screenshots/` 和 `test-scripts/.profile/`（无头浏览器临时配置）已在 `.gitignore` 中。
 - 参考电平（v0.1.0）：环境声 RMS ≈ 0.05–0.08，交互时峰值 ≈ 0.45，无削波。

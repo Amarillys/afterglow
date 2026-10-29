@@ -4,7 +4,7 @@
   const shards = (S.shards = {});
   const rnd = M.rng("chiyo sekai / shards");
   const TAU = Math.PI * 2;
-  const COLORS = [[150, 214, 240], [240, 176, 214], [184, 178, 236]];
+  const COLORS = [[160, 204, 232], [242, 178, 200], [196, 178, 230], [246, 204, 172]];
 
   const list = Array.from({ length: 16 }, () => {
     const n = 3 + Math.floor(rnd() * 3);
@@ -25,10 +25,10 @@
   }));
 
   function drawShard(ctx, s, now, alpha) {
-    const flip = Math.cos(now * 0.00025 * s.sp + s.ph);
+    const flip = Math.cos(now * 0.00016 * s.sp + s.ph);
     ctx.save();
     ctx.translate(s.sx, s.sy);
-    ctx.rotate(s.rot + now * 0.00004 * s.sp + s.spin);
+    ctx.rotate(s.rot + now * 0.000025 * s.sp + s.spin);
     ctx.scale(0.2 + 0.8 * Math.abs(flip), 1);
     ctx.beginPath();
     s.verts.forEach(([vx, vy]) => ctx.lineTo(vx * s.r, vy * s.r));
@@ -38,7 +38,7 @@
     g.addColorStop(1, M.rgba(s.col, (0.18 + 0.5 * s.glow) * alpha));
     ctx.fillStyle = g;
     ctx.fill();
-    ctx.strokeStyle = M.rgba(M.mix(s.col, [110, 120, 170], 0.25), (0.45 + 0.4 * s.glow) * alpha);
+    ctx.strokeStyle = M.rgba(M.mix(s.col, [140, 118, 150], 0.25), (0.45 + 0.4 * s.glow) * alpha);
     ctx.lineWidth = 1;
     ctx.stroke();
     if (s.glow > 0.02) {
@@ -51,12 +51,12 @@
 
   shards.draw = function (ctx, now, dt) {
     for (const s of list) {
-      const rise = (s.y + now * 0.0000022 * (0.4 + s.z)) % 1;
+      const rise = (s.y + now * 0.0000015 * (0.4 + s.z)) % 1;
       s.r = (6 + 16 * s.z) * Math.min(V.w, V.h) / 800;
-      s.sx = s.x * V.w + Math.sin(now * 0.00011 * s.sp + s.ph) * 24 * s.z;
+      s.sx = s.x * V.w + Math.sin(now * 0.00007 * s.sp + s.ph) * 24 * s.z;
       s.sy = V.h * (1.06 - rise * 1.12);
-      s.glow *= Math.exp(-dt * 1.6);
-      s.spinV *= Math.exp(-dt * 1.2);
+      s.glow *= Math.exp(-dt * 1.1);
+      s.spinV *= Math.exp(-dt * 0.9);
       s.spin += s.spinV * dt;
       const floorDim = s.sy > V.hy ? 0.55 : 1;
       drawShard(ctx, s, now, (0.35 + 0.65 * s.z) * floorDim * (0.75 + 0.25 * T.daylight));
@@ -66,9 +66,9 @@
   shards.drawMotes = function (ctx, now) {
     ctx.fillStyle = "#fff";
     for (const m of motes) {
-      const x = (((m.x + now * 0.001 * m.vx) % 1) + 1) % 1;
-      const y = (((m.y - now * 0.001 * m.vy) % 1) + 1) % 1;
-      ctx.globalAlpha = 0.25 + 0.5 * (0.5 + 0.5 * Math.sin(now * 0.0012 + m.ph));
+      const x = (((m.x + now * 0.0006 * m.vx) % 1) + 1) % 1;
+      const y = (((m.y - now * 0.0006 * m.vy) % 1) + 1) % 1;
+      ctx.globalAlpha = 0.25 + 0.5 * (0.5 + 0.5 * Math.sin(now * 0.0007 + m.ph));
       ctx.beginPath();
       ctx.arc(x * V.w, y * V.h, m.r, 0, TAU);
       ctx.fill();
@@ -84,7 +84,7 @@
       if (dx * dx + dy * dy < r * r) {
         s.cool = now + 900;
         s.glow = 1;
-        s.spinV += (Math.random() < 0.5 ? -1 : 1) * (3 + Math.random() * 3);
+        s.spinV += (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 2);
         return s;
       }
     }
