@@ -4,7 +4,7 @@
   const canvas = document.getElementById("world");
   const ctx = canvas.getContext("2d", { alpha: false });
   const IDLE_FPS = 3;
-  let last = performance.now(), raf = 0, timer = 0, active = !document.hidden && document.hasFocus();
+  let last = performance.now(), raf = 0, timer = 0, active = !document.hidden;
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, S.cfg.maxDpr);
@@ -14,8 +14,8 @@
     S.layout.resize(w, h, dpr);
   }
 
-  // full rate while the page is visible and focused, about 3 fps otherwise;
-  // while hidden nothing is drawn, but world time keeps moving so dawn and dusk still reach the music
+  // full rate whenever the page is visible, focused or not; in a background tab or a minimized window
+  // nothing is drawn, but world time keeps moving at about 3 Hz so dawn and dusk still reach the music
   function frame(now) {
     const dt = Math.min(0.5, (now - last) / 1000);
     last = now;
@@ -30,7 +30,7 @@
   }
 
   function setActive() {
-    const on = !document.hidden && document.hasFocus();
+    const on = !document.hidden;
     if (on === active) return;
     active = on;
     cancelAnimationFrame(raf);
@@ -70,7 +70,6 @@
   }
 
   addEventListener("resize", resize);
-  ["focus", "blur", "pointerdown", "keydown"].forEach((e) => addEventListener(e, setActive));
   document.addEventListener("visibilitychange", setActive);
   resize();
   S.ui.initGate(enter);

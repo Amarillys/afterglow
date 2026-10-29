@@ -1,4 +1,4 @@
-// Frame rate when focused / unfocused / hidden: draws per second, world-time ticks, and CPU time per second.
+// Frame rate when focused / unfocused but visible (full rate expected) / hidden (no drawing, ~3 Hz world time): draws per second, world-time ticks, and CPU time per second.
 // Usage: node test-scripts/fps-check.mjs
 import { launch, pageUrl, sleep } from "./cdp.mjs";
 
