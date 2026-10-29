@@ -45,4 +45,4 @@ js/main.js          resize、帧循环、进入世界
 - 各时段画面：`node test-scripts/hours.mjs 5.5 12.5 17.6 23`
 - Edge 路径：`C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe`（本机没有 Chrome）；Node 26 自带 WebSocket，无需安装依赖。
 - `test-screenshots/` 和 `test-scripts/.profile/`（无头浏览器临时配置）已在 `.gitignore` 中。
-- 参考电平（v0.1.0）：环境声 RMS ≈ 0.04–0.07，交互时峰值 ≈ 0.4，无削波。
+- 参考电平（v0.1.0）：环境声 RMS ≈ 0.05–0.08，交互时峰值 ≈ 0.45，无削波。
