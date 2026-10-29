@@ -1,3 +1,6 @@
 test-screenshots/
 deprecated/
 test-scripts/.profile/
+*.flac
+*.wav
+*.mp3

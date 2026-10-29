@@ -20,7 +20,7 @@
 
   const C = (S.conductor = { running: false, t0: 0, spb: 60 / S.cfg.bpm, step: 0, chord: PROG[0] });
   const log = [];
-  let motifQueue = null, motifBar = -1, arpDeg = 10, wind = null, breathAt = 0, mood = null;
+  let motifQueue = null, motifBar = -1, arpDeg = 10, tide = null, mood = null;
 
   C.start = function () {
     if (C.running || !A.ready) return;
@@ -28,8 +28,7 @@
     C.t0 = now + 1.8;
     C.step = 0;
     C.running = true;
-    wind = V.wind();
-    breathAt = now + 8;
+    tide = V.tide();
     const toDawn = (((6 - S.cfg.startHour + 24) % 24) / 24) * S.cfg.dayLength;
     const dawnBar = Math.round((toDawn - 1.8) / (C.spb * 4));
     motifQueue = { bar: dawnBar >= 2 && dawnBar <= 16 ? dawnBar : 4, notes: MOTIF };
@@ -44,7 +43,7 @@
       if (t > now - 0.05) play(C.step, t);
       C.step++;
     }
-    if (now > breathAt) breathe(now);
+    waves(now);
   }
 
   function play(step, t) {
@@ -115,13 +114,15 @@
     return n;
   }
 
-  function breathe(now) {
-    breathAt = now + 5 + Math.random() * 6;
-    const night = S.time.night;
-    wind.forEach((w, i) => {
-      w.bp.frequency.setTargetAtTime((i ? 700 : 380) + Math.random() * (i ? 900 : 500), now, 4);
-      w.g.gain.setTargetAtTime((0.18 + Math.random() * 0.3) * (0.7 + 0.5 * night), now, 4);
-    });
+  // keep the next wave on each shore scheduled; nights are a little stronger
+  function waves(now) {
+    for (const w of tide) {
+      if (w.next > now + 1) continue;
+      w.next = Math.max(w.next, now + 0.1);
+      const dur = 6 + Math.random() * 5, k = 0.8 + 0.4 * S.time.night;
+      V.wave(w, w.next, dur, (0.12 + Math.random() * 0.1) * k, 240 + Math.random() * 60, 480 + Math.random() * 260);
+      w.next += dur + 0.05 + Math.random() * 2.5;
+    }
   }
 
   S.on("hour", (h) => {

@@ -1,7 +1,7 @@
 (function () {
   "use strict";
   const S = window.Sekai;
-  const A = (S.audio = { ctx: null, ready: false, muted: false, level: 0.9 });
+  const A = (S.audio = { ctx: null, ready: false, muted: false, level: 0.8 });
 
   function impulse(ctx, seconds, decay) {
     const rate = ctx.sampleRate, len = Math.floor(rate * seconds);
@@ -61,7 +61,13 @@
     A.bus.gain.value = 1.3;
     A.bus.connect(comp);
     comp.connect(A.master);
-    A.master.connect(ctx.destination);
+    A.limit = ctx.createDynamicsCompressor();
+    A.limit.threshold.value = -2;
+    A.limit.knee.value = 0;
+    A.limit.ratio.value = 20;
+    A.limit.attack.value = 0.002;
+    A.limit.release.value = 0.15;
+    A.master.connect(A.limit).connect(ctx.destination);
 
     // long, soft reverb: the "empty space" of the world
     A.verb = ctx.createGain();

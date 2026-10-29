@@ -92,25 +92,38 @@
     sub.stop(end + 0.1);
   };
 
-  // two bands of moving air
-  V.wind = function () {
+  // two shores of soft surf; each wave swells and recedes instead of a constant hiss
+  V.tide = function () {
     const ctx = A.ctx, t = ctx.currentTime;
-    return [-0.6, 0.6].map((pan, i) => {
+    return [-0.55, 0.55].map((pan, i) => {
       const src = ctx.createBufferSource();
       src.buffer = A.noise;
       src.loop = true;
-      src.playbackRate.value = i ? 0.93 : 1.07;
+      src.playbackRate.value = i ? 0.9 : 1.04;
       const bp = ctx.createBiquadFilter();
       bp.type = "bandpass";
-      bp.frequency.value = i ? 900 : 520;
-      bp.Q.value = 0.8;
+      bp.frequency.value = 300;
+      bp.Q.value = 0.9;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.3, t + 6);
-      src.connect(bp).connect(g).connect(A.strip({ pan, dry: 0.8, wet: 0.5 }).input);
+      g.gain.linearRampToValueAtTime(0.02, t + 3);
+      src.connect(bp).connect(g).connect(A.strip({ pan, dry: 0.8, wet: 0.55 }).input);
       src.start(t, i * 2.3);
-      return { bp, g };
+      return { bp, g, next: t + 3.1 + i * 2.5 };
     });
+  };
+
+  // one wave: quick rise, long fall back to a quiet floor
+  const WAVE = new Float32Array(32).map((_, j) => {
+    const x = j / 31;
+    return x < 0.35 ? Math.sin(((x / 0.35) * Math.PI) / 2) ** 2 : Math.cos((((x - 0.35) / 0.65) * Math.PI) / 2) ** 1.6;
+  });
+  V.wave = function (w, t, dur, crest, lo, hi) {
+    const floor = 0.02;
+    try {
+      w.g.gain.setValueCurveAtTime(WAVE.map((v) => floor + (crest - floor) * v), t, dur);
+      w.bp.frequency.setValueCurveAtTime(WAVE.map((v) => lo + (hi - lo) * v), t, dur);
+    } catch (e) {}
   };
 
   // soft heartbeat on the downbeat
