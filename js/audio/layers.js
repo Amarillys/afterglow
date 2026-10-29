@@ -52,11 +52,14 @@
 
   // background chord: detuned saws through a slow lowpass swell
   V.pad = function (t, chord, dur, bright) {
-    if (!A.ready) return;
+    if (!A.ready) return [];
+    const gains = [];
     const ctx = A.ctx, fadeIn = 3.2, fadeOut = 3.6, end = t + dur + fadeOut;
     const cut = 650 + 750 * bright;
     const env = (peak, dest) => {
       const g = ctx.createGain();
+      g.gain.value = 0;
+      gains.push(g);
       g.gain.setValueAtTime(0, t);
       g.gain.linearRampToValueAtTime(peak, t + fadeIn);
       g.gain.setValueAtTime(peak, t + dur);
@@ -90,6 +93,7 @@
     sub.connect(env(0.075, subOut.input));
     sub.start(t);
     sub.stop(end + 0.1);
+    return gains;
   };
 
   // two shores of soft surf; each wave swells and recedes instead of a constant hiss

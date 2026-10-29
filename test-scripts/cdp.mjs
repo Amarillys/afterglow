@@ -88,6 +88,11 @@ export async function launch({ width = 1280, height = 800, port = 9333 } = {}) {
       await send("Input.dispatchKeyEvent", { type: "keyDown", code, key, text: key.length === 1 ? key : undefined });
       await send("Input.dispatchKeyEvent", { type: "keyUp", code, key });
     },
+    async upload(selector, file) {
+      const doc = await send("DOM.getDocument", {});
+      const q = await send("DOM.querySelector", { nodeId: doc.result.root.nodeId, selector });
+      await send("DOM.setFileInputFiles", { nodeId: q.result.nodeId, files: [resolve(ROOT, file)] });
+    },
     close() {
       ws.close();
       proc.kill();

@@ -340,3 +340,49 @@ body.night #question { text-shadow: 0 0 18px rgba(60, 50, 90, 0.35); }
   #mood .bar { width: 46px; }
   #question { font-size: 16px; letter-spacing: 0.2em; top: 21%; }
 }
+
+/* ---------- reference music ---------- */
+#btn-music.on { opacity: 1; color: rgb(226, 140, 170); }
+#music {
+  position: absolute;
+  right: 26px;
+  bottom: 68px;
+  width: 280px;
+  padding: 16px 18px 14px;
+  border-radius: 14px;
+  background: rgba(255, 251, 247, 0.72);
+  border: 1px solid rgba(160, 138, 180, 0.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #6e607c;
+  pointer-events: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 0.5s ease, transform 0.5s ease, visibility 0.5s;
+}
+#music.open { opacity: 1; visibility: visible; transform: none; }
+#music-title { font-size: 14.5px; letter-spacing: 0.14em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#music-sub { margin-top: 6px; font-size: 12px; letter-spacing: 0.06em; line-height: 1.6; color: rgba(110, 96, 124, 0.72); }
+#music .mrow { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 12.5px; }
+#music .mrow > span:first-child { width: 3.2em; letter-spacing: 0.2em; color: rgba(110, 96, 124, 0.72); }
+#music .ctl { display: none; }
+#music.has .ctl { display: flex; }
+#music:not(.has) #music-play { display: none; }
+#music button {
+  padding: 4px 11px;
+  border: 1px solid rgba(160, 138, 180, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+#music button:hover { background: rgba(255, 255, 255, 0.85); }
+#music button.sel { border-color: rgba(226, 140, 170, 0.8); background: rgba(246, 196, 212, 0.35); }
+#music-off { min-width: 4.6em; text-align: center; font-variant-numeric: tabular-nums; }
+body.entered.idle #hud:has(#music.open) { opacity: 1; }
+@media (max-width: 640px) {
+  #music { right: 12px; bottom: 58px; width: min(280px, calc(100vw - 24px)); }
+}

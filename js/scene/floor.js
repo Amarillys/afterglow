@@ -89,17 +89,18 @@
   }
 
   function beats(ctx, heard) {
-    const C = S.conductor;
-    if (!C.running) return;
+    const g = S.conductor.grid();
+    if (!g) return;
     const far = TRAVEL * 1.6;
-    const b0 = Math.floor((heard - C.t0) / C.spb);
+    const b0 = Math.floor((heard - g.t0) / g.spb);
     ctx.strokeStyle = M.rgba(T.pal.ink, 1);
-    for (let b = Math.max(0, b0); b <= b0 + Math.ceil(far / C.spb) + 1; b++) {
-      const dt = C.t0 + b * C.spb - heard;
+    for (let b = Math.max(0, b0); b <= b0 + Math.ceil(far / g.spb) + 1; b++) {
+      if (b % g.every) continue;
+      const dt = g.t0 + b * g.spb - heard;
       if (dt < -0.15 || dt > far) continue;
       const s = L.depth(dt), y = L.floorY(s);
-      ctx.globalAlpha = (b % 4 === 0 ? 0.34 : 0.12) * M.smooth(far, TRAVEL * 0.8, dt) * M.smooth(-0.15, 0.12, dt);
-      ctx.lineWidth = (b % 4 === 0 ? 1.4 : 1) * Math.max(0.6, s);
+      ctx.globalAlpha = (b % g.bar === 0 ? 0.34 : 0.12) * M.smooth(far, TRAVEL * 0.8, dt) * M.smooth(-0.15, 0.12, dt);
+      ctx.lineWidth = (b % g.bar === 0 ? 1.4 : 1) * Math.max(0.6, s);
       ctx.beginPath();
       ctx.moveTo(L.floorX(-1, s), y);
       ctx.lineTo(L.floorX(1, s), y);
@@ -116,9 +117,9 @@
   }
 
   function judge(ctx, heard) {
-    const C = S.conductor;
+    const g = S.conductor.grid();
     let pulse = 0;
-    if (C.running && heard > C.t0) pulse = Math.exp(-(((heard - C.t0) / C.spb) % 1) * C.spb * 3.5);
+    if (g && heard > g.t0) pulse = Math.exp(-(((heard - g.t0) / (g.spb * g.every)) % 1) * g.spb * g.every * 3.5);
     const y = V.jy, x0 = L.floorX(-1, 1), x1 = L.floorX(1, 1);
     const wide = ctx.createLinearGradient(0, 0, V.w, 0);
     wide.addColorStop(0, "rgba(255,255,255,0)");

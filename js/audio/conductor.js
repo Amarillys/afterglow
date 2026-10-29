@@ -20,7 +20,7 @@
 
   const C = (S.conductor = { running: false, t0: 0, spb: 60 / S.cfg.bpm, step: 0, chord: PROG[0] });
   const log = [];
-  let motifQueue = null, motifBar = -1, arpDeg = 10, tide = null, mood = null;
+  let motifQueue = null, motifBar = -1, arpDeg = 10, tide = null, mood = null, pads = [], lastGen = 0;
 
   C.start = function () {
     if (C.running || !A.ready) return;
@@ -44,9 +44,12 @@
       C.step++;
     }
     waves(now);
+    S.reference.tick(now);
   }
 
   function play(step, t) {
+    if (S.reference.busy(t)) return;
+    lastGen = t;
     const spb = C.spb, bar = Math.floor(step / 8), pos = step % 8;
     const day = S.time.daylight;
     mood = S.mood.mix();
@@ -58,7 +61,8 @@
       C.chord = chord;
       log.push({ t, chord });
       if (log.length > 6) log.shift();
-      V.pad(t - 1.6, chord, spb * 8 - 0.4, day * (1.25 - 0.75 * mood.gentle));
+      pads.push(V.pad(t - 1.6, chord, spb * 8 - 0.4, day * (1.25 - 0.75 * mood.gentle)));
+      if (pads.length > 3) pads.shift();
       S.emit("chord", { t, chord });
     }
 
@@ -119,7 +123,7 @@
     for (const w of tide) {
       if (w.next > now + 1) continue;
       w.next = Math.max(w.next, now + 0.1);
-      const dur = 6 + Math.random() * 5, k = 0.8 + 0.4 * S.time.night;
+      const dur = 6 + Math.random() * 5, k = (0.8 + 0.4 * S.time.night) * (S.reference.busy() ? 0.45 : 1);
       V.wave(w, w.next, dur, (0.12 + Math.random() * 0.1) * k, 240 + Math.random() * 60, 480 + Math.random() * 260);
       w.next += dur + 0.05 + Math.random() * 2.5;
     }
@@ -131,13 +135,31 @@
   });
 
   // signed distance (s) from audio time t to the nearest beat
+  // the beat everyone follows: the reference song's grid while it plays, otherwise our own
+  C.grid = function () {
+    const r = S.reference.grid();
+    if (r || S.reference.busy()) return r;
+    return C.running ? { t0: C.t0, spb: C.spb, bar: 4, every: 1 } : null;
+  };
   C.beatOffset = function (t) {
-    if (!C.running) return 1;
-    const b = (t - C.t0) / C.spb;
-    return (b - Math.round(b)) * C.spb;
+    const g = C.grid();
+    if (!g) return 1;
+    const b = (t - g.t0) / g.spb;
+    return (b - Math.round(b)) * g.spb;
+  };
+  C.quietAt = () => lastGen;
+  C.hush = function () {
+    const n = A.ctx.currentTime;
+    pads.forEach((gs) => gs.forEach((g) => {
+      g.gain.cancelScheduledValues(n);
+      g.gain.setValueAtTime(g.gain.value, n);
+      g.gain.linearRampToValueAtTime(0, n + 2);
+    }));
+    pads = [];
   };
 
   C.chordAt = function (t) {
+    if (S.reference.busy()) return S.reference.chord();
     let c = PROG[0];
     for (const e of log) if (e.t <= t + 0.5) c = e.chord;
     return c;

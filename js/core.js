@@ -56,10 +56,11 @@
   const PENTA = [0, 2, 4, 7, 9];
   S.music = {
     DEG_MAX: 18,
+    root: 0, // semitones from D; a reference song moves the scale into its key
     midi(deg) {
       const d = Math.round(deg);
       const o = Math.floor(d / 5);
-      return 50 + o * 12 + PENTA[((d % 5) + 5) % 5];
+      return 50 + S.music.root + o * 12 + PENTA[((d % 5) + 5) % 5];
     },
     freq(deg) {
       return 440 * Math.pow(2, (S.music.midi(deg) - 69) / 12);

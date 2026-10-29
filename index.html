@@ -22,7 +22,18 @@
   </div>
   <div class="clock"><span id="clock-time">05:30</span><span id="clock-sub"></span></div>
   <div class="sign">千代世界<span>chiyo sekai</span></div>
+  <div id="music">
+    <div id="music-title">参考音乐</div>
+    <div id="music-sub"></div>
+    <div class="mrow ctl"><span>节拍</span><button data-m="0.5">×½</button><button data-m="1">×1</button><button data-m="2">×2</button></div>
+    <div class="mrow ctl"><span>音符</span><button data-d="calm">稀疏</button><button data-d="normal">适中</button><button data-d="dense">密集</button></div>
+    <div class="mrow ctl"><span>对齐</span><button data-o="-0.02">−</button><span id="music-off">0 ms</span><button data-o="0.02">+</button></div>
+    <div class="mrow"><button id="music-play">播放</button><button id="music-pick">选择曲子</button></div>
+  </div>
   <div class="ctrl">
+    <button id="btn-music" type="button" title="参考音乐" aria-label="参考音乐">
+      <svg viewBox="0 0 24 24"><path d="M9 17V6l10-2v11"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="15" r="2"/></svg>
+    </button>
     <button id="btn-sound" type="button" title="声音" aria-label="声音">
       <svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path class="on" d="M15.5 9.2a4 4 0 0 1 0 5.6M18 7a7.2 7.2 0 0 1 0 10"/><path class="off" d="M16 10l4 4M20 10l-4 4"/></svg>
     </button>
@@ -31,6 +42,8 @@
     </button>
   </div>
 </div>
+
+<input id="music-file" type="file" accept="audio/*,.flac" hidden>
 
 <div id="gate" role="button" tabindex="0" aria-label="进入">
   <div class="gate-mark"><i></i></div>
@@ -44,8 +57,10 @@
 <script src="js/time.js"></script>
 <script src="js/audio/engine.js"></script>
 <script src="js/audio/voices.js"></script>
+<script src="js/audio/analyze.js"></script>
 <script src="js/audio/layers.js"></script>
 <script src="js/audio/conductor.js"></script>
+<script src="js/audio/reference.js"></script>
 <script src="js/scene/sky.js"></script>
 <script src="js/scene/floor.js"></script>
 <script src="js/scene/shards.js"></script>
@@ -53,6 +68,7 @@
 <script src="js/mood.js"></script>
 <script src="js/questions.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/music.js"></script>
 <script src="js/input.js"></script>
 <script src="js/main.js"></script>
 </body>
