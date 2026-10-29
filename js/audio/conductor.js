@@ -37,6 +37,7 @@
 
   function tick() {
     const now = A.ctx.currentTime;
+    mood = S.mood.mix();
     for (;;) {
       const t = C.t0 + (C.step * C.spb) / 2;
       if (t >= now + S.cfg.lookahead) break;
@@ -52,19 +53,10 @@
     lastGen = t;
     const spb = C.spb, bar = Math.floor(step / 8), pos = step % 8;
     const day = S.time.daylight;
-    mood = S.mood.mix();
     const drive = 0.75 + 0.75 * mood.drive; // 1 when the attributes are balanced
     const thin = bar % 32 >= 20; // the rhythm rests for 12 bars in every 32
 
-    if (pos === 0 && bar % 2 === 0) {
-      const chord = PROG[(bar / 2) % PROG.length];
-      C.chord = chord;
-      log.push({ t, chord });
-      if (log.length > 6) log.shift();
-      pads.push(V.pad(t - 1.6, chord, spb * 8 - 0.4, day * (1.25 - 0.75 * mood.gentle)));
-      if (pads.length > 3) pads.shift();
-      S.emit("chord", { t, chord });
-    }
+    if (pos === 0 && bar % 2 === 0) chordOn(t, PROG[(bar / 2) % PROG.length], spb * 8 - 0.4);
 
     if (pos === 0 && motifQueue && bar >= motifQueue.bar) {
       motifQueue.notes.forEach(([b, deg, len]) => note(t + b * spb, deg, true, len));
@@ -94,10 +86,21 @@
     }
   }
 
-  function note(t, deg, motif, len) {
+  // the pad chord, moved into the current key (the rhythm-theme player uses this too)
+  function chordOn(t, base, dur) {
+    const r = S.music.root, chord = { ...base, bass: base.bass + r, notes: base.notes.map((m) => m + r) };
+    C.chord = chord;
+    log.push({ t, chord });
+    if (log.length > 6) log.shift();
+    pads.push(V.pad(t - 1.6, chord, dur, S.time.daylight * (1.25 - 0.75 * mood.gentle)));
+    if (pads.length > 3) pads.shift();
+    S.emit("chord", { t, chord });
+  }
+
+  function note(t, deg, motif, len, vel = 1) {
     const lane = M.clamp(Math.floor((deg - 7) / 2.25), 0, 3);
     V.bell(t, S.music.freq(deg), {
-      vel: motif ? 0.85 : 0.45 + Math.random() * 0.2,
+      vel: (motif ? 0.85 : 0.45 + Math.random() * 0.2) * vel,
       pan: (lane - 1.5) * 0.36,
       wet: (motif ? 0.6 : 0.5) + 0.3 * (mood.calm - 1 / 3),
       echo: motif ? 0.26 : 0.18,
@@ -106,8 +109,9 @@
     S.emit("note", { t, lane, deg, motif });
   }
 
-  function nextDeg(d, strong) {
+  function nextDeg(d, strong, target) {
     let n = d + M.pick(STEPS);
+    if (target != null) n += Math.round((target - n) * 0.4);
     if (n < 7) n = 14 - n;
     if (n > 15) n = 30 - n;
     if (!strong) return n;
@@ -123,14 +127,14 @@
     for (const w of tide) {
       if (w.next > now + 1) continue;
       w.next = Math.max(w.next, now + 0.1);
-      const dur = 6 + Math.random() * 5, k = (0.8 + 0.4 * S.time.night) * (S.reference.busy() ? 0.45 : 1);
+      const dur = 6 + Math.random() * 5, k = 0.8 + 0.4 * S.time.night;
       V.wave(w, w.next, dur, (0.12 + Math.random() * 0.1) * k, 240 + Math.random() * 60, 480 + Math.random() * 260);
       w.next += dur + 0.05 + Math.random() * 2.5;
     }
   }
 
   S.on("hour", (h) => {
-    if (!C.running || S.time.elapsed < 60) return;
+    if (!C.running || S.time.elapsed < 60 || S.reference.busy()) return;
     if (h === 6 || h === 18) motifQueue = { bar: Math.floor(C.step / 8) + 1, notes: h === 6 ? MOTIF : DUSK };
   });
 
@@ -148,6 +152,11 @@
     return (b - Math.round(b)) * g.spb;
   };
   C.quietAt = () => lastGen;
+  C.PROG = PROG;
+  C.chordOn = chordOn;
+  C.note = note;
+  C.mood = () => mood;
+  C.melody = (strong, target) => (arpDeg = nextDeg(arpDeg, strong, target));
   C.hush = function () {
     const n = A.ctx.currentTime;
     pads.forEach((gs) => gs.forEach((g) => {
@@ -159,7 +168,6 @@
   };
 
   C.chordAt = function (t) {
-    if (S.reference.busy()) return S.reference.chord();
     let c = PROG[0];
     for (const e of log) if (e.t <= t + 0.5) c = e.chord;
     return c;

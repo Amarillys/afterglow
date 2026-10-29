@@ -23,15 +23,15 @@
   <div class="clock"><span id="clock-time">05:30</span><span id="clock-sub"></span></div>
   <div class="sign">千代世界<span>chiyo sekai</span></div>
   <div id="music">
-    <div id="music-title">参考音乐</div>
+    <div id="music-title">节奏主题</div>
     <div id="music-sub"></div>
-    <div class="mrow ctl"><span>节拍</span><button data-m="0.5">×½</button><button data-m="1">×1</button><button data-m="2">×2</button></div>
+    <div id="music-list"></div>
+    <div class="mrow ctl"><span>速度</span><button data-m="0.5">×½</button><button data-m="1">×1</button><button data-m="2">×2</button></div>
     <div class="mrow ctl"><span>音符</span><button data-d="calm">稀疏</button><button data-d="normal">适中</button><button data-d="dense">密集</button></div>
-    <div class="mrow ctl"><span>对齐</span><button data-o="-0.02">−</button><span id="music-off">0 ms</span><button data-o="0.02">+</button></div>
-    <div class="mrow"><button id="music-play">播放</button><button id="music-pick">选择曲子</button></div>
+    <div class="mrow"><button id="music-pick">＋ 加入曲子</button></div>
   </div>
   <div class="ctrl">
-    <button id="btn-music" type="button" title="参考音乐" aria-label="参考音乐">
+    <button id="btn-music" type="button" title="节奏主题" aria-label="节奏主题">
       <svg viewBox="0 0 24 24"><path d="M9 17V6l10-2v11"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="15" r="2"/></svg>
     </button>
     <button id="btn-sound" type="button" title="声音" aria-label="声音">

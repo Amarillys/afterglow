@@ -1,168 +1,189 @@
 (function () {
   "use strict";
-  const S = window.Sekai, A = S.audio, M = S.m;
+  const S = window.Sekai, A = S.audio, M = S.m, V = S.voices;
   const KEY = "chiyo-sekai-themes", KEEP = 6;
   const NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
-  const GAP = { calm: 2, normal: 1, dense: 0.5 }; // minimum note spacing in beats
+  // minimum spacing (in song beats) between two hits of the same instrument
+  const GAP = { note: 2, pulse: 2, tick: 1 };
+  const DENSITY = { calm: 1, normal: 0.5, dense: 0.25 };
+  const LANE_DEG = [8, 10, 12, 14]; // low onsets pull the bell melody down, bright ones up
 
-  // a song the player brings: its beat drives the track, its onsets become the falling notes
-  const R = (S.reference = { state: "idle", name: "", progress: 0, error: "" });
-  let buf = null, theme = null, prefs = null, id = "", src = null, gain = null, start = 0, quiet = 0;
-  let list = [], li = 0, flashAt = -1, token = 0;
+  // a song the player brings is only a source of rhythm and key: the world plays it on its own instruments
+  const R = (S.reference = { state: "idle", name: "", listening: false, progress: 0, error: "" });
+  let store = { order: [], items: {}, active: null };
+  try {
+    store = Object.assign(store, JSON.parse(localStorage.getItem(KEY)) || {});
+  } catch (e) {}
+  let theme = null, prefs = null, seq = [], loopBeats = 16, ei = 0, loop = 0;
+  let t0 = 0, lastEnd = 0, chordB = 0, chordI = 0, quiet = 0;
 
-  function cache() {
+  const save = () => {
     try {
-      return JSON.parse(localStorage.getItem(KEY)) || { order: [], items: {} };
-    } catch (e) {
-      return { order: [], items: {} };
-    }
-  }
-  function remember() {
-    const c = cache();
-    c.items[id] = { theme, prefs };
-    c.order = [id].concat(c.order.filter((k) => k !== id));
-    c.order.splice(KEEP).forEach((k) => delete c.items[k]);
-    try {
-      localStorage.setItem(KEY, JSON.stringify(c));
+      localStorage.setItem(KEY, JSON.stringify(store));
     } catch (e) {}
-  }
+  };
   const changed = () => S.emit("reference");
+  const nameOf = (id, it) => (it && it.name) || id.split("|")[0].replace(/\.[^.]+$/, "");
 
   R.load = async function (file) {
-    if (!A.ready || !file) return;
-    R.stop();
-    const my = ++token;
-    Object.assign(R, { state: "listening", name: file.name.replace(/\.[^.]+$/, ""), progress: 0, error: "" });
-    id = file.name + "|" + file.size + "|" + file.lastModified;
-    S.conductor.hush();
+    if (!A.ready || !file || R.listening) return;
+    const id = file.name + "|" + file.size + "|" + file.lastModified;
+    Object.assign(R, { listening: true, progress: 0, error: "" });
     changed();
     try {
-      const data = await file.arrayBuffer();
-      const decoded = await A.ctx.decodeAudioData(data);
-      if (my !== token) return;
-      const hit = cache().items[id];
-      const fresh = hit && hit.theme.v === S.analyze.version;
-      theme = fresh ? hit.theme : await S.analyze(decoded, (p) => my === token && ((R.progress = p), changed()));
-      if (my !== token) return;
-      buf = decoded;
-      prefs = Object.assign({ mult: 1, offset: 0, density: "calm" }, fresh ? hit.prefs : {});
-      remember();
-      R.play();
+      const hit = store.items[id];
+      if (!hit || hit.theme.v !== S.analyze.version) {
+        const buf = await A.ctx.decodeAudioData(await file.arrayBuffer());
+        store.items[id] = { name: nameOf(file.name), theme: await S.analyze(buf, (p) => ((R.progress = p), changed())) };
+      }
+      store.order = [id].concat(store.order.filter((k) => k !== id));
+      store.order.splice(KEEP).forEach((k) => delete store.items[k]);
+      R.listening = false;
+      R.use(id);
     } catch (e) {
-      if (my !== token) return;
-      Object.assign(R, { state: "idle", error: "这首曲子打不开（" + (e.name || "error") + "）" });
-      buf = theme = null;
+      Object.assign(R, { listening: false, error: "这首曲子打不开（" + (e.name || "error") + "）" });
       changed();
     }
   };
 
-  // starts once the world's already-scheduled notes have rung out, so two keys never overlap
-  R.play = function () {
-    if (!buf || R.state === "playing") return;
-    const ctx = A.ctx, now = ctx.currentTime;
-    start = Math.max(now + 0.6, S.conductor.quietAt() + 0.3);
-    gain = ctx.createGain();
-    gain.gain.value = 0;
-    gain.gain.setValueAtTime(0, start);
-    gain.gain.linearRampToValueAtTime(theme.gain, start + 0.8);
-    const send = ctx.createGain();
-    send.gain.value = 0.06;
-    gain.connect(A.master);
-    gain.connect(send).connect(A.verb);
-    const s = (src = ctx.createBufferSource());
-    s.buffer = buf;
-    s.connect(gain);
-    s.start(start);
-    s.onended = () => s === src && finish();
+  // switch to a saved theme; it starts once the notes already scheduled have rung out
+  R.use = function (id) {
+    const it = store.items[id];
+    if (!A.ready || !it || (R.state === "playing" && store.active === id)) return;
+    if (R.state === "playing") release();
+    store.active = id;
+    theme = it.theme;
+    prefs = it.prefs = Object.assign({ mult: 1, density: "calm" }, it.prefs);
+    save();
+    R.name = nameOf(id, it);
+    const now = A.ctx.currentTime;
+    t0 = Math.max(now + 1.8, S.conductor.quietAt() + 1.2, quiet + 1.2);
+    lastEnd = now;
+    chordB = 0;
+    chordI = theme.key.minor ? 1 : 0;
+    build();
+    seek(0);
     S.music.root = theme.key.root;
-    R.state = "playing";
-    flashAt = -1;
-    rebuild(true);
     S.conductor.hush();
+    R.state = "playing";
     changed();
   };
 
-  function finish() {
-    src = null;
-    R.state = buf ? "ready" : "idle";
+  function release() {
+    quiet = lastEnd;
+    R.state = "idle";
     S.music.root = 0;
-    changed();
+    S.conductor.hush();
   }
 
   R.stop = function () {
-    if (!src) return;
-    const s = src, n = A.ctx.currentTime;
-    src = null;
-    gain.gain.cancelScheduledValues(n);
-    gain.gain.setValueAtTime(gain.gain.value, n);
-    gain.gain.linearRampToValueAtTime(0, n + 1.2);
-    try {
-      s.stop(n + 1.3);
-    } catch (e) {}
-    finish();
-  };
-
-  R.busy = () => R.state === "listening" || R.state === "playing";
-
-  // a beat grid is only offered when the song has a clear, steady pulse
-  R.grid = function () {
-    if (R.state !== "playing" || theme.fit < 1.5) return null;
-    const spb = theme.spb / prefs.mult;
-    return { t0: start + theme.downbeat + prefs.offset, spb, bar: 4 * prefs.mult, every: spb < 0.5 ? 2 : 1 };
-  };
-
-  // the strongest onsets that are at least GAP beats apart; the top fifth are accents
-  function rebuild(fromStart) {
-    const gap = GAP[prefs.density] * (theme.spb / prefs.mult) * 0.98, keep = [];
-    for (const n of theme.notes.slice().sort((a, b) => b.s - a.s)) {
-      if (keep.every((k) => Math.abs(k.t - n.t) >= gap)) keep.push(n);
-    }
-    keep.sort((a, b) => a.t - b.t);
-    const strong = keep.map((n) => n.s).sort((a, b) => a - b)[Math.floor(keep.length * 0.8)] ?? 1;
-    list = keep.map((n) => ({ t: n.t, lane: n.lane, acc: n.s >= strong }));
-    li = 0;
-    if (!fromStart) {
-      const done = A.ctx.currentTime + S.cfg.lookahead - start - prefs.offset;
-      while (li < list.length && list[li].t < done) li++;
-    }
-  }
-
-  R.tick = function (now) {
     if (R.state !== "playing") return;
-    const horizon = now + S.cfg.lookahead;
-    while (li < list.length && start + list[li].t + prefs.offset < horizon) {
-      const n = list[li++];
-      S.emit("note", { t: start + n.t + prefs.offset, lane: n.lane, motif: n.acc, ref: true });
-    }
-    const g = R.grid();
-    if (g) {
-      const k = Math.floor((horizon - g.t0) / (g.spb * g.bar * 4));
-      if (k > flashAt && k >= 0) {
-        flashAt = k;
-        S.emit("chord", { t: g.t0 + k * g.spb * g.bar * 4 });
-      }
-    }
-  };
-
-  R.set = function (p) {
-    if (!prefs) return;
-    if ("mult" in p) prefs.mult = M.clamp(p.mult, 0.5, 2);
-    if ("offset" in p) prefs.offset = M.clamp(Math.round(p.offset * 100) / 100, -0.3, 0.3);
-    if ("density" in p && GAP[p.density]) prefs.density = p.density;
-    remember();
-    if (R.state === "playing") rebuild(false);
+    release();
+    store.active = null;
+    save();
     changed();
   };
 
-  R.info = function () {
-    if (!theme) return null;
-    const k = theme.key;
-    return {
-      bpm: Math.round(theme.bpm * prefs.mult), beat: theme.fit >= 1.5, key: NAMES[k.tonic] + (k.minor ? " 小调" : " 大调"),
-      dur: theme.dur, notes: list.length, ...prefs,
+  // the world's own scheduler stays quiet while a theme plays and until its last notes have rung
+  R.busy = (t) => R.state === "playing" || (t ?? (A.ctx ? A.ctx.currentTime : 0)) < quiet;
+
+  // the song's onsets as hits for bell / heartbeat / clock, in song beats from the first downbeat
+  function build() {
+    const spb = theme.spb, steady = theme.fit >= 1.5, k = DENSITY[prefs.density];
+    const pts = theme.notes
+      .map((n) => ({ b: (n.t - theme.downbeat) / spb, lane: n.lane, s: n.s }))
+      .filter((n) => n.b >= 0)
+      .map((n) => (steady ? { ...n, b: Math.round(n.b * 4) / 4 } : n));
+    loopBeats = Math.max(16, Math.ceil((theme.dur - theme.downbeat) / spb / 16) * 16);
+    const pick = (kind, from) => {
+      const gap = GAP[kind] * k - 1e-6, keep = [];
+      for (const n of from.slice().sort((a, b) => b.s - a.s)) if (keep.every((x) => Math.abs(x.b - n.b) >= gap)) keep.push(n);
+      return keep.map((n) => ({ ...n, kind }));
     };
+    const notes = pick("note", pts);
+    const strong = notes.map((n) => n.s).sort((a, b) => a - b)[Math.floor(notes.length * 0.8)] ?? 1;
+    notes.forEach((n) => (n.acc = n.s >= strong));
+    seq = notes.concat(pick("pulse", pts.filter((n) => n.lane === 0)), pick("tick", pts.filter((n) => n.lane === 3)));
+    seq.sort((a, b) => a.b - b.b);
+  }
+
+  function seek(b) {
+    b = Math.max(0, b);
+    loop = Math.floor(b / loopBeats);
+    ei = seq.findIndex((e) => e.b >= b - loop * loopBeats);
+    if (ei < 0) (ei = 0), loop++;
+  }
+
+  const spb = () => theme.spb / prefs.mult;
+  const energyAt = (b) => theme.energy[Math.floor((theme.downbeat + (b % loopBeats) * theme.spb) * 2)] ?? 0.6;
+  // about seven seconds per chord, whatever the song's tempo
+  const chordBeats = () => 4 * 2 ** Math.max(0, Math.round(Math.log2(7 / (spb() * 4))));
+
+  R.tick = function (now) {
+    if (R.state !== "playing") return;
+    const end = now + S.cfg.lookahead, p = spb();
+    for (;;) {
+      const e = seq.length ? seq[ei] : null, eb = e ? e.b + loop * loopBeats : Infinity;
+      const b = Math.min(chordB, eb), t = t0 + b * p;
+      if (t >= end) break;
+      if (chordB <= eb) {
+        const per = chordBeats();
+        S.conductor.chordOn(t, S.conductor.PROG[chordI++ % S.conductor.PROG.length], per * p - 0.4);
+        chordB += per;
+        continue;
+      }
+      if (t > now - 0.05) fire(e, t, eb);
+      if (++ei >= seq.length) (ei = 0), loop++;
+    }
+    lastEnd = end;
   };
 
-  // strum / answer phrase while a song plays: a pentatonic cluster in the song's key
-  R.chord = () => ({ notes: [57, 59, 62, 64].map((m) => m + S.music.root), bass: 38 + S.music.root, tones: [0, 1, 2, 3, 4] });
+  function fire(e, t, b) {
+    const m = S.conductor.mood(), day = S.time.daylight, en = 0.45 + 0.55 * energyAt(b);
+    const drive = 0.75 + 0.75 * m.drive, onBeat = Math.abs(b - Math.round(b)) < 0.01;
+    if (e.kind === "pulse") V.pulse(t, (0.16 + 0.28 * e.s) * drive * en * (0.5 + 0.5 * day));
+    else if (e.kind === "tick") {
+      const high = onBeat && Math.round(b) % 2 === 0;
+      V.tick(t, high, (0.06 + 0.08 * e.s) * drive * en * (0.6 + 0.4 * day), high ? -0.25 : 0.25);
+    } else {
+      if (S.questions.busy() && !e.acc && Math.random() < 0.5) return;
+      const deg = S.conductor.melody(onBeat || e.acc, LANE_DEG[e.lane]);
+      S.conductor.note(t, deg, e.acc, e.acc ? 1.4 : 1, (0.7 + 0.5 * e.s) * en);
+    }
+  }
+
+  // tempo and density changes keep the beat that is about to play exactly where it was
+  R.set = function (p) {
+    if (!prefs) return;
+    const frontier = (lastEnd - t0) / spb();
+    if ("mult" in p && [0.5, 1, 2].includes(p.mult)) prefs.mult = p.mult;
+    if ("density" in p && DENSITY[p.density]) prefs.density = p.density;
+    save();
+    if (R.state === "playing") {
+      t0 = lastEnd - frontier * spb();
+      build();
+      seek(frontier);
+    }
+    changed();
+  };
+
+  // beat lines and on-beat sparkles follow the theme only when the song has a steady pulse
+  R.grid = function () {
+    if (R.state !== "playing" || theme.fit < 1.5) return null;
+    const p = spb();
+    return { t0, spb: p, bar: 4, every: p < 0.5 ? 2 : 1 };
+  };
+
+  R.info = function () {
+    if (R.state !== "playing") return null;
+    const k = theme.key;
+    return {
+      name: R.name, bpm: Math.round(theme.bpm * prefs.mult), beat: theme.fit >= 1.5, key: NAMES[k.tonic] + (k.minor ? " 小调" : " 大调"),
+      dur: theme.dur, mult: prefs.mult, density: prefs.density, hits: seq.length,
+    };
+  };
+  R.list = () => store.order.filter((id) => store.items[id]).map((id) => ({ id, name: nameOf(id, store.items[id]), bpm: Math.round(store.items[id].theme.bpm) }));
+  R.active = () => (R.state === "playing" ? store.active : null);
+  // the last chosen theme comes back on the next visit
+  R.resume = () => store.active && store.items[store.active] && R.use(store.active);
 })();

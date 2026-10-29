@@ -39,6 +39,7 @@
       A.resume();
       A.fadeTo(A.level, 3);
       S.conductor.start();
+      S.reference.resume();
     }
     S.time.start();
     S.input.bind(canvas);

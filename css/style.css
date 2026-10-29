@@ -368,7 +368,6 @@ body.night #question { text-shadow: 0 0 18px rgba(60, 50, 90, 0.35); }
 #music .mrow > span:first-child { width: 3.2em; letter-spacing: 0.2em; color: rgba(110, 96, 124, 0.72); }
 #music .ctl { display: none; }
 #music.has .ctl { display: flex; }
-#music:not(.has) #music-play { display: none; }
 #music button {
   padding: 4px 11px;
   border: 1px solid rgba(160, 138, 180, 0.35);
@@ -381,7 +380,10 @@ body.night #question { text-shadow: 0 0 18px rgba(60, 50, 90, 0.35); }
 }
 #music button:hover { background: rgba(255, 255, 255, 0.85); }
 #music button.sel { border-color: rgba(226, 140, 170, 0.8); background: rgba(246, 196, 212, 0.35); }
-#music-off { min-width: 4.6em; text-align: center; font-variant-numeric: tabular-nums; }
+#music-list { display: grid; gap: 5px; margin-top: 12px; max-height: 210px; overflow-y: auto; }
+#music #music-list button { display: block; width: 100%; padding: 7px 12px; border-radius: 10px; text-align: left; }
+#music-list .nm { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.08em; }
+#music-list small { display: block; margin-top: 2px; font-size: 11px; opacity: 0.65; letter-spacing: 0.06em; }
 body.entered.idle #hud:has(#music.open) { opacity: 1; }
 @media (max-width: 640px) {
   #music { right: 12px; bottom: 58px; width: min(280px, calc(100vw - 24px)); }

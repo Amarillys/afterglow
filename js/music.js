@@ -2,24 +2,38 @@
   "use strict";
   const S = window.Sekai, R = S.reference;
   const $ = (id) => document.getElementById(id);
-  const panel = $("music"), btn = $("btn-music"), file = $("music-file");
-  const fmt = (s) => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+  const panel = $("music"), btn = $("btn-music"), file = $("music-file"), list = $("music-list");
+  const DENS = { calm: "稀疏", normal: "适中", dense: "密集" };
   const AUDIO = /\.(flac|mp3|wav|ogg|m4a|aac|opus)$/i;
 
+  function item(id, name, sub, on) {
+    const b = document.createElement("button");
+    b.dataset.id = id;
+    b.classList.toggle("sel", on);
+    const n = document.createElement("span");
+    n.className = "nm";
+    n.textContent = name;
+    const s = document.createElement("small");
+    s.textContent = sub;
+    b.append(n, s);
+    return b;
+  }
+
   function render() {
-    const info = R.info(), listening = R.state === "listening";
-    $("music-title").textContent = listening ? "正在聆听… " + Math.round(R.progress * 100) + "%" : R.name || "参考音乐";
-    let sub = "拖入或选择一首曲子（flac / mp3 / wav），轨道和节拍会跟着它走";
+    const info = R.info(), active = R.active();
+    $("music-title").textContent = R.listening ? "正在聆听… " + Math.round(R.progress * 100) + "%" : "节奏主题";
+    let sub = "加入一首曲子，世界会用自己的铃、心跳和钟，照着它的节奏和调性演奏（原曲不播放）";
     if (R.error) sub = R.error;
-    else if (listening) sub = "分析节拍与调性，第一次需要几秒";
-    else if (info) sub = (info.beat ? info.bpm + " BPM · " : "没有稳定的节拍 · ") + info.key + " · " + fmt(info.dur);
+    else if (R.listening) sub = "分析节奏与调性，第一次需要几秒";
+    else if (info) sub = info.name + " · " + (info.beat ? info.bpm + " BPM · " : "节拍不稳定 · ") + info.key + " · " + DENS[info.density];
     $("music-sub").textContent = sub;
-    panel.classList.toggle("has", !!info && !listening);
-    btn.classList.toggle("on", R.state === "playing");
-    $("music-play").textContent = R.state === "playing" ? "停止" : "播放";
-    $("music-pick").textContent = info ? "换一首" : "选择曲子";
+    list.replaceChildren(
+      item("", "世界的节奏", S.cfg.bpm + " BPM · 默认", !active),
+      ...R.list().map((t) => item(t.id, t.name, t.bpm + " BPM", t.id === active))
+    );
+    panel.classList.toggle("has", !!info);
+    btn.classList.toggle("on", !!active);
     if (!info) return;
-    $("music-off").textContent = (info.offset > 0 ? "+" : "") + Math.round(info.offset * 1000) + " ms";
     panel.querySelectorAll("[data-m]").forEach((b) => b.classList.toggle("sel", +b.dataset.m === info.mult));
     panel.querySelectorAll("[data-d]").forEach((b) => b.classList.toggle("sel", b.dataset.d === info.density));
   }
@@ -36,10 +50,9 @@
     const b = e.target.closest("button");
     if (!b) return;
     if (b.id === "music-pick") file.click();
-    else if (b.id === "music-play") R.state === "playing" ? R.stop() : R.play();
+    else if ("id" in b.dataset) b.dataset.id ? R.use(b.dataset.id) : R.stop();
     else if (b.dataset.m) R.set({ mult: +b.dataset.m });
     else if (b.dataset.d) R.set({ density: b.dataset.d });
-    else if (b.dataset.o && R.info()) R.set({ offset: R.info().offset + +b.dataset.o });
     b.blur();
   });
 
