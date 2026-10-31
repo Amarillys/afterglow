@@ -15,12 +15,14 @@
   }
 
   // full rate whenever the page is visible, focused or not; in a background tab or a minimized window
-  // nothing is drawn, but world time keeps moving at about 3 Hz so dawn and dusk still reach the music
+  // no drawing; world time and expired-note cleanup keep running at about 3 Hz
   function frame(now) {
     const dt = Math.min(0.5, (now - last) / 1000);
     last = now;
     S.time.update(now);
-    if (!document.hidden) draw(now, dt);
+    const heard = A.ready ? A.heard() : 0;
+    S.floor.update(heard, !document.hidden);
+    if (!document.hidden) draw(now, dt, heard);
     schedule();
   }
 
@@ -38,8 +40,7 @@
     schedule();
   }
 
-  function draw(now, dt) {
-    const heard = A.ready ? A.heard() : 0;
+  function draw(now, dt, heard) {
     ctx.setTransform(S.view.dpr, 0, 0, S.view.dpr, 0, 0);
     S.sky.draw(ctx, now);
     S.floor.draw(ctx, now, heard);

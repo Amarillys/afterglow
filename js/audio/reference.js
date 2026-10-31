@@ -121,18 +121,26 @@
 
   R.tick = function (now) {
     if (R.state !== "playing") return;
-    const end = now + S.cfg.lookahead, p = spb();
+    const end = now + S.cfg.lookahead, p = spb(), per = chordBeats(), cutoff = now - 0.05;
+    // After a stall, jump to the current beat without rebuilding expired chords or walking every missed loop.
+    const first = (cutoff - t0) / p;
+    if (cutoff > lastEnd) seek(first);
+    const skipped = Math.max(0, Math.ceil((first - chordB) / per));
+    chordB += skipped * per;
+    chordI += skipped;
+    if (skipped) S.conductor.chordState(t0 + (chordB - per) * p, S.conductor.PROG[(chordI - 1) % S.conductor.PROG.length]);
     for (;;) {
       const e = seq.length ? seq[ei] : null, eb = e ? e.b + loop * loopBeats : Infinity;
       const b = Math.min(chordB, eb), t = t0 + b * p;
       if (t >= end) break;
       if (chordB <= eb) {
-        const per = chordBeats();
-        S.conductor.chordOn(t, S.conductor.PROG[chordI++ % S.conductor.PROG.length], per * p - 0.4);
+        const chord = S.conductor.PROG[chordI++ % S.conductor.PROG.length];
+        if (t > cutoff) S.conductor.chordOn(t, chord, per * p - 0.4);
+        else S.conductor.chordState(t, chord);
         chordB += per;
         continue;
       }
-      if (t > now - 0.05) fire(e, t, eb);
+      if (t > cutoff) fire(e, t, eb);
       if (++ei >= seq.length) (ei = 0), loop++;
     }
     lastEnd = end;

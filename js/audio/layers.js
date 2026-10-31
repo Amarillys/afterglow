@@ -46,6 +46,7 @@
         g.gain.setValueAtTime(g.gain.value, n);
         g.gain.setTargetAtTime(0, n, 0.35);
         [...oscs, vib].forEach((o) => o.stop(n + 2.5));
+        A.retire(n + 2.5, [...oscs, vib, vibAmt, lp, g, ...out.nodes]);
       },
     };
   };
@@ -53,7 +54,7 @@
   // background chord: detuned saws through a slow lowpass swell
   V.pad = function (t, chord, dur, bright) {
     if (!A.ready) return [];
-    const gains = [];
+    const gains = [], nodes = [];
     const ctx = A.ctx, fadeIn = 3.2, fadeOut = 3.6, end = t + dur + fadeOut;
     const cut = 650 + 750 * bright;
     const env = (peak, dest) => {
@@ -76,6 +77,7 @@
       lp.frequency.linearRampToValueAtTime(cut, t + dur * 0.5);
       lp.frequency.linearRampToValueAtTime(cut * 0.7, end);
       lp.connect(out.input);
+      nodes.push(lp, ...out.nodes);
       const g = env(0.022, lp);
       chord.notes.forEach((m, i) => {
         const o = ctx.createOscillator();
@@ -85,6 +87,7 @@
         o.connect(g);
         o.start(t);
         o.stop(end + 0.1);
+        nodes.push(o);
       });
     });
     const sub = ctx.createOscillator();
@@ -93,6 +96,7 @@
     sub.connect(env(0.075, subOut.input));
     sub.start(t);
     sub.stop(end + 0.1);
+    A.retire(end + 0.1, [...nodes, ...gains, sub, ...subOut.nodes]);
     return gains;
   };
 
@@ -134,7 +138,7 @@
   V.pulse = function (t, vel) {
     if (!A.ready) return;
     const ctx = A.ctx;
-    const out = A.strip({ dry: 1, wet: 0.2 });
+    const out = A.strip({ dry: 1, wet: 0.2 }), nodes = [...out.nodes];
     [[80, 46, 0.36, "sine"], [160, 110, 0.04, "triangle"]].forEach(([f0, f1, amp, type]) => {
       const o = ctx.createOscillator();
       o.type = type;
@@ -147,7 +151,9 @@
       o.connect(g).connect(out.input);
       o.start(t);
       o.stop(t + 0.9);
+      nodes.push(o, g);
     });
+    A.retire(t + 0.9, nodes);
   };
 
   // the clock: high "tick", lower "tock"
@@ -176,5 +182,6 @@
     o.connect(og).connect(out.input);
     o.start(t);
     o.stop(t + 0.4);
+    A.retire(t + 0.4, [src, bp, g, o, og, ...out.nodes]);
   };
 })();

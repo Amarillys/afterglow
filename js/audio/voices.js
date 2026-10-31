@@ -7,7 +7,7 @@
   const trim = (f) => Math.min(1, Math.pow(520 / f, 0.32));
 
   function partial(t, dest, freq, amp, decay, attack = 0.004, type = "sine") {
-    if (freq > 11000) return;
+    if (freq > 11000) return [];
     const ctx = A.ctx;
     const o = ctx.createOscillator();
     o.type = type;
@@ -19,6 +19,7 @@
     o.connect(g).connect(dest);
     o.start(t);
     o.stop(t + attack + decay + 0.1);
+    return [o, g];
   }
 
   function lowpass(dest, freq) {
@@ -88,6 +89,7 @@
     src.buffer = bellBuffer(freq, o.len ?? 1);
     src.connect(out.input);
     src.start(t);
+    A.retire(t + src.buffer.duration, [src, ...out.nodes]);
   };
 
   // floor taps: a drop on still water (near = dry and bright, far = soft and distant)
@@ -108,8 +110,8 @@
     osc.connect(g).connect(lp);
     osc.start(t);
     osc.stop(t + 1.6);
-    partial(t, lp, freq * 2, amp * 0.22, 0.5, 0.002);
-    partial(t, lp, freq * 4, amp * 0.06, 0.12, 0.001);
+    const parts = [...partial(t, lp, freq * 2, amp * 0.22, 0.5, 0.002), ...partial(t, lp, freq * 4, amp * 0.06, 0.12, 0.001)];
+    A.retire(t + 1.6, [osc, g, lp, ...parts, ...out.nodes]);
   };
 
   // floating shards: inharmonic, slightly different every time
@@ -118,9 +120,11 @@
     const amp = 0.12 * (o.vel ?? 1) * trim(freq);
     const out = A.strip({ pan: o.pan, dry: 0.7, wet: 0.7, echo: 0.25 });
     const lp = lowpass(out.input, 9000);
+    const nodes = [lp, ...out.nodes];
     CHIME.forEach(([r, a, d]) => {
-      partial(t, lp, freq * r * (1 + (Math.random() - 0.5) * 0.006), amp * a, d, 0.006);
+      nodes.push(...partial(t, lp, freq * r * (1 + (Math.random() - 0.5) * 0.006), amp * a, d, 0.006));
     });
+    A.retire(t + 2.8, nodes);
   };
 
   // drag glissando: Karplus-Strong string, one cached buffer per pitch
@@ -162,7 +166,9 @@
     const g = ctx.createGain();
     g.gain.value = 0.13 * (o.vel ?? 1) * trim(freq);
     const out = A.strip({ pan: o.pan, dry: 0.8, wet: 0.55, echo: 0.22 });
-    src.connect(g).connect(lowpass(out.input, 3800));
+    const lp = lowpass(out.input, 3800);
+    src.connect(g).connect(lp);
     src.start(t);
+    A.retire(t + buf.duration / rate, [src, g, lp, ...out.nodes]);
   };
 })();

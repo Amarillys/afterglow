@@ -38,6 +38,7 @@
   function tick() {
     const now = A.ctx.currentTime;
     mood = S.mood.mix();
+    C.step = Math.max(C.step, Math.ceil(((now - 0.05 - C.t0) * 2) / C.spb));
     for (;;) {
       const t = C.t0 + (C.step * C.spb) / 2;
       if (t >= now + S.cfg.lookahead) break;
@@ -46,6 +47,7 @@
     }
     waves(now);
     S.reference.tick(now);
+    A.sweep();
   }
 
   function play(step, t) {
@@ -86,13 +88,21 @@
     }
   }
 
-  // the pad chord, moved into the current key (the rhythm-theme player uses this too)
-  function chordOn(t, base, dur) {
+  // Follow harmony without creating a voice when seeking past missed chords.
+  function chordState(t, base) {
     const r = S.music.root, chord = { ...base, bass: base.bass + r, notes: base.notes.map((m) => m + r) };
     C.chord = chord;
     log.push({ t, chord });
     if (log.length > 6) log.shift();
-    pads.push(V.pad(t - 1.6, chord, dur, S.time.daylight * (1.25 - 0.75 * mood.gentle)));
+    return chord;
+  }
+
+  // the pad chord, moved into the current key (the rhythm-theme player uses this too)
+  function chordOn(t, base, dur) {
+    const chord = chordState(t, base);
+    // A late chord still fades in from silence instead of starting halfway through its envelope.
+    const start = Math.max(t - 1.6, A.ctx.currentTime + 0.01);
+    pads.push(V.pad(start, chord, dur, S.time.daylight * (1.25 - 0.75 * mood.gentle)));
     if (pads.length > 3) pads.shift();
     S.emit("chord", { t, chord });
   }
@@ -153,6 +163,7 @@
   };
   C.quietAt = () => lastGen;
   C.PROG = PROG;
+  C.chordState = chordState;
   C.chordOn = chordOn;
   C.note = note;
   C.mood = () => mood;

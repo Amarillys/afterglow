@@ -154,11 +154,6 @@
   function drawNotes(ctx, heard) {
     for (let i = notes.length - 1; i >= 0; i--) {
       const n = notes[i], dt = n.t - heard;
-      if (dt <= 0) {
-        if (dt > -0.25) S.fx.laneHit(n.lane, n.motif);
-        notes.splice(i, 1);
-        continue;
-      }
       if (dt > TRAVEL * 1.15) continue;
       const s = L.depth(dt), y = L.floorY(s), x = L.floorX(-0.75 + n.lane * 0.5, s);
       const hw = V.tw * 0.11 * s, hh = Math.max(1.4, 6 * s), pad = 4 * s;
@@ -187,6 +182,16 @@
     ctx.fillStyle = g;
     ctx.fillRect(0, V.hy - 0.5, V.w, 1.5);
   }
+
+  // Retire notes on the audio clock even when the hidden page does not draw.
+  floor.update = function (heard, visible) {
+    for (let i = notes.length - 1; i >= 0; i--) {
+      const n = notes[i], dt = n.t - heard;
+      if (dt > 0) continue;
+      if (visible && dt > -0.25) S.fx.laneHit(n.lane, n.motif);
+      notes.splice(i, 1);
+    }
+  };
 
   floor.draw = function (ctx, now, heard) {
     base(ctx);

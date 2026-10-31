@@ -120,17 +120,37 @@
     const dry = ctx.createGain();
     dry.gain.value = o.dry ?? 1;
     pan.connect(dry).connect(A.bus);
+    const nodes = [input, pan, dry];
     if (o.wet) {
       const w = ctx.createGain();
       w.gain.value = o.wet;
       pan.connect(w).connect(A.verb);
+      nodes.push(w);
     }
     if (o.echo) {
       const e = ctx.createGain();
       e.gain.value = o.echo;
       pan.connect(e).connect(A.echo);
+      nodes.push(e);
     }
-    return { input, pan };
+    return { input, pan, nodes };
+  };
+
+  // In a background tab the browser frees finished nodes only now and then, and until then they still render;
+  // thousands pile up and the audio thread runs out of time. A voice hands its nodes over here and they are
+  // disconnected once its sound is over (audio clock); the shared reverb and echo keep their own tails.
+  let retired = [];
+  A.retire = function (end, nodes) {
+    retired.push({ end: end + 0.5, nodes });
+  };
+  A.sweep = function () {
+    const now = A.ctx.currentTime;
+    if (!retired.some((r) => r.end < now)) return;
+    retired = retired.filter((r) => {
+      if (r.end >= now) return true;
+      for (const n of r.nodes) n.disconnect();
+      return false;
+    });
   };
 
   A.fadeTo = function (v, sec) {
